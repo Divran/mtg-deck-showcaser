@@ -8,7 +8,7 @@ $(document).ready(function() {
 	});
 
 	function loadCards() {
-		var txt = input.val();
+		var txt = input.val().trim();
 		var lines = txt.split("\n");
 
 		var requests = {};
@@ -69,7 +69,7 @@ $(document).ready(function() {
 							html:true,
 							content:"<img src='" + image + "'>",
 							container:"#result-body",
-							placement:"right",
+							placement:"auto",
 							trigger:"hover",
 							animation:false
 						});

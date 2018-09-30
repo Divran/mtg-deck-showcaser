@@ -4,6 +4,7 @@ $(document).ready(function() {
 	var result = $( "#result-card #result-body" );
 	input.focus(function() {
 		input.select();
+		input.removeClass("loaded");
 	});
 
 	function loadCards() {
@@ -38,6 +39,7 @@ $(document).ready(function() {
 
 		result.empty();
 		$("#result-card .collapse").collapse("show");
+		input.addClass("loaded");
 
 		var cards = {};
 
@@ -62,7 +64,7 @@ $(document).ready(function() {
 
 						var card_url = "http://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=" + card.multiverseid;
 
-						var a = $("<a href='"+card_url+"' class='mtg-card'>"+amount+"x "+name+"</a>");
+						var a = $("<a target='_blank' href='"+card_url+"' class='mtg-card'>"+amount+"x "+name+"</a>");
 						a.popover({
 							html:true,
 							content:"<img src='" + image + "'>",

@@ -6,6 +6,10 @@
 	height:450px;
 }
 
+#input-card #input.loaded {
+	height:50px;
+}
+
 body {
 	padding-top:32px;
 	padding-bottom:32px;

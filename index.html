@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+
+<html lang="en">
+	<head>
+		<title>MTG Deck Showcaser</title>
+		<meta charset="UTF-8">
+
+		<script src="js/jquery-3.3.1.min.js"></script>
+		<script src="js/bootstrap.bundle.min.js"></script>
+		<script src="js/deck-showcaser.js"></script>
+		<link href="css/bootstrap.min.css" rel="stylesheet">
+		<link href="css/deck-showcaser.css" rel="stylesheet">
+	</head>
+	<body>
+		<div class="container">
+			<div class="card" id="input-card">
+				<div class="collapse show">
+					<div class="card-body">
+						<textarea id="input" class="form-control"></textarea>
+					</div>
+					<div class="card-footer">
+						<div class="btn btn-primary">Ok</div>
+					</div>
+				</div>
+			</div>
+
+			<br>
+
+			<div class="card" id="result-card">
+				<div class="collapse">
+					<div class="card-body" id="result-body">
+
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="credits">
+			<small>
+				Made by Divran, September 2018<br>
+				Uses MTG API at <a href="https://docs.magicthegathering.io/">https://docs.magicthegathering.io/</a><br>
+				Source: <a href='https://github.com/Divran/mtg-deck-showcaser'>https://github.com/Divran/mtg-deck-showcaser</a>
+			</small>
+		</div>
+		
+	</body>
+</html>

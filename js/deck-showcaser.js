@@ -30,7 +30,7 @@ $(document).ready(function() {
 				requests[set] = [[]];
 			}
 
-			if (requests[set][0].length >= 100) {
+			if (requests[set][0].length >= 50) { // the limit is 100 requests, but we're limiting ourselves to 50 to be safe
 				requests[set].unshift([]);
 			}
 
@@ -38,10 +38,20 @@ $(document).ready(function() {
 		});
 
 		result.empty();
+
+		var row = $("<div class='mtg-row'></div>");
+		var creatures = $("<div class='mtg-col'><strong>Creatures</strong><div class='mtg-list'></div></div>");
+		var noncreatures = $("<div class='mtg-col'><strong>Non-creatures</strong><div class='mtg-list'></div></div>");
+		var lands = $("<div class='mtg-col'><strong>Lands</strong><div class='mtg-list'></div></div>");
+		var columns = {"creatures":$(".mtg-list",creatures),"noncreatures":$(".mtg-list",noncreatures),"lands":$(".mtg-list",lands)};
+		row.append([creatures,noncreatures,lands]);
+		result.append(row);
+
 		$("#result-card .collapse").collapse("show");
 		input.addClass("loaded");
 
 		var cards = {};
+		var num_requests = 0;
 
 		$.each(requests,function(set,arr) {
 			$.each(arr,function(idx,names) {
@@ -50,12 +60,17 @@ $(document).ready(function() {
 
 				var lands = {};
 
-				$.get( url, function(data) {
+				num_requests++;
+				var x = $.get( url, function(data) {
 					$.each(data.cards,function(idx,card) {
 						var name = card.name;
 						var amount = amount_by_name[name] || 0;
 						var image = card.imageUrl;
 						var type = card.types[0];
+
+						var card_category = "creatures";
+						if (type != "Creature") {card_category = "noncreatures";}
+						if (type == "Land") {card_category = "lands";}
 
 						if (lands[name] == true) {return;}
 						if (card.supertypes && card.supertypes[0] == "Basic" && type == "Land") {
@@ -64,31 +79,50 @@ $(document).ready(function() {
 
 						var card_url = "http://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=" + card.multiverseid;
 
-						var a = $("<a target='_blank' href='"+card_url+"' class='mtg-card'>"+amount+"x "+name+"</a>");
-						a.popover({
-							html:true,
-							content:"<img src='" + image + "'>",
-							container:"#result-body",
-							placement:"auto",
-							trigger:"hover",
-							animation:false
-						});
+						var a = $("<a target='_blank' href='"+card_url+"' class='mtg-card'></a>");
+						a.append("<img src='"+image+"'>");
 
-						result.append([a,"<br>"]);
-
-						/*
-						todo later: group cards by type
-						if (typeof cards[type]) {cards[type] = [];}
-						cards[type].push({
+						if (typeof cards[card_category] == "undefined") {cards[card_category] = [];}
+						cards[card_category].push({
 							name: name,
 							amount: amount,
 							image: image,
 							a: a,
 							cmc: card.cmc
 						});
-						*/
 					});
 				});
+
+				x.always(function() {
+					num_requests--;
+
+					if (num_requests == 0) {
+						$.each(cards,function(card_category,_cards) {
+							_cards.sort(function(a,b) {
+								if (a.cmc == b.cmc) {return 0;}
+								return a.cmc < b.cmc ? -1 : 1;
+							});
+
+							var parent = columns[card_category];
+							var num_child = 0;
+
+							$.each(_cards,function(idx,card) {
+								var amount = card.amount;
+
+								if (amount > 4) {
+									parent.append(card.a);
+									card.a.append("<div class='card-counter'>" + amount + "x</div>");
+									num_child++;
+								} else {
+									for(var i=0;i<amount;i++) {
+										parent.append(card.a.clone());
+										num_child++;
+									}
+								}
+							});
+						});
+					}
+				})
 			});
 		});
 	}

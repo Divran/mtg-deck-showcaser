@@ -80,7 +80,9 @@ $(document).ready(function() {
 						var card_url = "http://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=" + card.multiverseid;
 
 						var a = $("<a target='_blank' href='"+card_url+"' class='mtg-card'></a>");
-						a.append("<img src='"+image+"'>");
+						var img = $("<img src='"+image+"'>");
+						img.hide();
+						a.append(img);
 
 						if (typeof cards[card_category] == "undefined") {cards[card_category] = [];}
 						cards[card_category].push({
@@ -98,10 +100,16 @@ $(document).ready(function() {
 
 					if (num_requests == 0) {
 						$.each(cards,function(card_category,_cards) {
-							_cards.sort(function(a,b) {
-								if (a.cmc == b.cmc) {return 0;}
-								return a.cmc < b.cmc ? -1 : 1;
-							});
+							if (card_category == "lands") { // sort lands alphabetically
+								_cards.sort(function(a,b) {
+									return a.name.localeCompare(b.name);
+								});
+							} else { // sort other cards by CMC
+								_cards.sort(function(a,b) {
+									if (a.cmc == b.cmc) {return 0;}
+									return a.cmc < b.cmc ? -1 : 1;
+								});
+							}
 
 							var parent = columns[card_category];
 							var num_child = 0;
@@ -120,6 +128,20 @@ $(document).ready(function() {
 									}
 								}
 							});
+						});
+
+						$("img",result).on("load", function() {
+							$(this).show();
+							$(".fake-element",$(this).parent()).remove();
+						}).each(function() {
+							if(this.complete) {
+								$(this).show();
+							} else {
+								var parent = $(this).parent();
+								if (parent.is(":first-child")) {
+									parent.append("<div class='fake-element' style='display:inline-block; height:300px;'></div>"); // insert fake element
+								}
+							}
 						});
 					}
 				})

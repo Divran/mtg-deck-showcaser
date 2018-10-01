@@ -7,6 +7,15 @@ $(document).ready(function() {
 		input.removeClass("loaded");
 	});
 
+	function resizeFakeCards() {
+		$(".fake-card").each(function() {
+			var that = $(this);
+			var width = that.parent().parent().width();
+			that.css("height",(width*1.25)+"px");
+		});
+	}
+	$(window).resize(resizeFakeCards);
+
 	function loadCards() {
 		var txt = input.val().trim();
 		var lines = txt.split("\n");
@@ -119,7 +128,7 @@ $(document).ready(function() {
 
 								if (amount > 4) {
 									parent.append(card.a);
-									card.a.append("<div class='card-counter'>" + amount + "x</div>");
+									card.a.append($("<div class='card-counter'>" + amount + "x</div>").hide());
 									num_child++;
 								} else {
 									for(var i=0;i<amount;i++) {
@@ -130,19 +139,26 @@ $(document).ready(function() {
 							});
 						});
 
+						function showImg(that) {
+							$(".card-counter",that.parent()).show();
+							$(".fake-card",that.parent()).remove();
+							that.show();
+						}
+
 						$("img",result).on("load", function() {
-							$(this).show();
-							$(".fake-element",$(this).parent()).remove();
+							showImg($(this));
 						}).each(function() {
 							if(this.complete) {
-								$(this).show();
+								showImg($(this));
 							} else {
 								var parent = $(this).parent();
 								if (parent.is(":first-child")) {
-									parent.append("<div class='fake-element' style='display:inline-block; height:300px;'></div>"); // insert fake element
+									parent.append("<div class='fake-card'></div>"); // insert fake card
 								}
 							}
 						});
+
+						resizeFakeCards();
 					}
 				})
 			});

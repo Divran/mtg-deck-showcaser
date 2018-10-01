@@ -104,3 +104,10 @@ body {
 	flex:1;
 	max-width:252px;
 }
+
+.fake-card {
+	display:block;
+    position:relative;
+    max-width:100%;
+    width:252px;
+}

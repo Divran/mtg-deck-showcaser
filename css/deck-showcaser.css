@@ -46,6 +46,10 @@ body {
 	display:inline-block;
 }
 
+.center .width-limiter #input-card {
+	text-align:left;
+}
+
 /* mtg card */
 
 .mtg-list {

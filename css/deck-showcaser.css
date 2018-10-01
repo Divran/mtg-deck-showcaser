@@ -42,7 +42,7 @@ body {
 }
 
 .center .width-limiter {
-	max-width:700px;
+	max-width:800px;
 	display:inline-block;
 }
 
@@ -62,9 +62,8 @@ body {
 }
 
 .mtg-card:not(:first-child) {
-	margin-top:-126.5%;
+	margin-top:-128%;
 }
-
 
 .mtg-card .card-counter {
 	position:absolute;
@@ -85,7 +84,7 @@ body {
 	display:block;
 	position:relative;
 	max-width:100%;
-	width:224px;
+	width:252px;
 }
 
 .mtg-card:hover img {
@@ -103,5 +102,5 @@ body {
 .mtg-col {
 	padding:2px;
 	flex:1;
-	max-width:224px;
+	max-width:252px;
 }

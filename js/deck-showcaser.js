@@ -95,7 +95,6 @@ $(document).ready(function() {
 			query_list.push(card.multiverseid);
 		});
 
-		console.log(query_list);
 		location.hash = LZString.compressToEncodedURIComponent(query_list.join(","));
 	}
 
@@ -161,7 +160,11 @@ $(document).ready(function() {
 		input.addClass("loaded");
 	}
 
-	function processCard(card,cards,lands,get_amount) {
+	function processCard(card,cards,get_amount) {
+		if (typeof card.imageUrl == "undefined") {
+			alert("Warning: Card '" + card.name + "' doesn't have an image!");
+		}
+
 		var name = card.name;
 		var amount = get_amount(card) || 1;
 		var image = card.imageUrl;
@@ -170,11 +173,6 @@ $(document).ready(function() {
 		var card_category = "creatures";
 		if (type != "Creature") {card_category = "noncreatures";}
 		if (type == "Land") {card_category = "lands";}
-
-		if (lands[name] == true) {return;}
-		if (card.supertypes && card.supertypes[0] == "Basic" && type == "Land") {
-			lands[name] = true;
-		}
 
 		var card_url = "http://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=" + card.multiverseid;
 
@@ -205,15 +203,21 @@ $(document).ready(function() {
 		$.each(lines,function(row,line) {
 			line = line.trim();
 			try {
-				var re = /^(\d*) (.*?) \((.*?)\) ?(\d*)?$/i;
+				var re = /^(\d*) (.*?) ?(\((.*?)\))? ?(\d*)?$/i;
 				var match = line.match(re);
 
 				var amount = parseInt(match[1]);
 				var name = match[2];
-				var set = match[3];
+				var set = match[4] || "*";
+
+				if (set == "*") {
+					alert("Set unspecified for card '" + name + "'! For now, the API doesn't have a good way to search for cards without a set, so I'm gonna need you to specify one. Action aborted.");
+					return false;
+				}
 				//var dunno = match[4]; // just ignore it I guess
 			} catch(e) {
 				alert("Error parsing deck: " + e);
+				return;
 			}
 
 			amount_by_name[name] = amount;
@@ -221,6 +225,18 @@ $(document).ready(function() {
 			if (typeof requests[set] == "undefined") {
 				requests[set] = [[]];
 			}
+
+			// Special case for requesting basic lands with no set specified
+			/*
+			if (set == "*") {
+				var lands = {"Plains":true,"Mountain":true,"Swamp":true,"Forest":true,"Island":true};
+				if (typeof lands[name] != "undefined") {
+					if (typeof requests["*BasicLands"] == "undefined") {requests["*BasicLands"] = [];}
+					requests["*BasicLands"].push([name]);
+					return;
+				}
+			}
+			*/
 
 			if (requests[set][0].length >= 50) { // the limit is 100 requests, but we're limiting ourselves to 50 to be safe
 				requests[set].unshift([]);
@@ -234,15 +250,24 @@ $(document).ready(function() {
 
 		$.each(requests,function(set,arr) {
 			$.each(arr,function(idx,names) {
-				var request_string = $.param({name:names.join("|"),set:set});
+				var params = {};
+				params.name = names.join("|");
+				if (set.indexOf("*") == -1) {
+					params.set = set;
+				}
+
+				var request_string = $.param(params);
 				var url = "https://api.magicthegathering.io/v1/cards?" + request_string;
 
-				var lands = {};
+				var fetched_cards = {};
 
 				num_requests++;
 				var x = $.get( url, function(data) {
 					$.each(data.cards,function(idx,card) {
-						processCard(card,cards,lands,function(c) {
+						if (fetched_cards[card.name]) {return;}
+						fetched_cards[card.name] = true;
+
+						processCard(card,cards,function(c) {
 							return amount_by_name[c.name];
 						});
 					});
@@ -306,12 +331,15 @@ $(document).ready(function() {
 			var request_string = $.param({multiverseid:multiverseids.join("|")});
 			var url = "https://api.magicthegathering.io/v1/cards?" + request_string;
 
-			var lands = {};
+			var fetched_cards = {};
 
 			num_requests++;
 			var x = $.get( url, function(data) {
 				$.each(data.cards,function(idx,card) {
-					processCard(card,cards,lands,function(c) {
+					if (fetched_cards[card.name]) {return;}
+					fetched_cards[card.name] = true;
+
+					processCard(card,cards,function(c) {
 						return amount_by_multiverseid[c.multiverseid];
 					});
 				});

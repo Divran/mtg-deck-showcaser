@@ -199,6 +199,7 @@ $(document).ready(function() {
 
 		var requests = {};
 		var amount_by_name = {};
+		var found_cards = {};
 
 		$.each(lines,function(row,line) {
 			line = line.trim();
@@ -209,6 +210,8 @@ $(document).ready(function() {
 				var amount = parseInt(match[1]);
 				var name = match[2];
 				var set = match[4] || "*";
+
+				if (set == "DAR") {set = "DOM";} // Hopefully temporary, check back later, maybe erase
 
 				if (set == "*") {
 					alert("Set unspecified for card '" + name + "'! For now, the API doesn't have a good way to search for cards without a set, so I'm gonna need you to specify one. Action aborted.");
@@ -221,6 +224,7 @@ $(document).ready(function() {
 			}
 
 			amount_by_name[name] = amount;
+			found_cards[name] = false;
 
 			if (typeof requests[set] == "undefined") {
 				requests[set] = [[]];
@@ -259,13 +263,11 @@ $(document).ready(function() {
 				var request_string = $.param(params);
 				var url = "https://api.magicthegathering.io/v1/cards?" + request_string;
 
-				var fetched_cards = {};
-
 				num_requests++;
 				var x = $.get( url, function(data) {
 					$.each(data.cards,function(idx,card) {
-						if (fetched_cards[card.name]) {return;}
-						fetched_cards[card.name] = true;
+						if (found_cards[card.name] == true) {return;}
+						found_cards[card.name] = true;
 
 						processCard(card,cards,function(c) {
 							return amount_by_name[c.name];
@@ -277,6 +279,12 @@ $(document).ready(function() {
 					num_requests--;
 
 					if (num_requests == 0) {
+						$.each(found_cards,function(name,b) {
+							if (b == false) {
+								alert("Card '" + name + "' not found! It's possible the API hasn't been updated yet.");
+							}
+						});
+
 						displayCards(cards);
 						buildShareURL(cards);
 					}
@@ -326,17 +334,16 @@ $(document).ready(function() {
 
 		var cards = {};
 		var num_requests = 0;
+		var fetched_cards = {};
 
 		$.each(requests,function(idx,multiverseids) {
 			var request_string = $.param({multiverseid:multiverseids.join("|")});
 			var url = "https://api.magicthegathering.io/v1/cards?" + request_string;
 
-			var fetched_cards = {};
-
 			num_requests++;
 			var x = $.get( url, function(data) {
 				$.each(data.cards,function(idx,card) {
-					if (fetched_cards[card.name]) {return;}
+					if (fetched_cards[card.name] == true) {return;}
 					fetched_cards[card.name] = true;
 
 					processCard(card,cards,function(c) {

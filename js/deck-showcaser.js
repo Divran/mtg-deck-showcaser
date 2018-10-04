@@ -155,20 +155,38 @@ $(document).ready(function() {
 			}
 		});
 
-		resizeFakeCards();
 		$("#result-card .collapse").collapse("show");
 		input.addClass("loaded");
+		resizeFakeCards();
+		setTimeout(function() {resizeFakeCards();},200);
 	}
 
-	function processCard(card,cards,get_amount) {
-		if (typeof card.image_uris == "undefined") {
-			alert("Warning: Card '" + card.name + "' doesn't have an image!");
+	function processCard(card,cards,amount) {
+		var name = card.name;
+		var type = card.type_line;
+		var image = undefined;
+		var fix_border_class = "";
+
+		var multi_images = {split:true, flip:true, transform:true, double_faced_token:true};
+		if (multi_images[card.layout]) {
+			if (card.card_faces[0].image_uris.border_crop) {
+				image = card.card_faces[0].image_uris.border_crop;
+				fix_border_class = "fix-border";
+			} else {
+				image = card.card_faces[0].image_uris.png;
+			}
+		} else {
+			if (card.image_uris.border_crop) {
+				image = card.image_uris.border_crop;
+				fix_border_class = "fix-border";
+			} else {
+				image = card.image_uris.png;
+			}
 		}
 
-		var name = card.name;
-		var amount = get_amount(card) || 1;
-		var image = card.image_uris.border_crop;
-		var type = card.type_line;
+		if (typeof image == "undefined") {
+			alert("Warning: Card '" + card.name + "' doesn't have an image!");
+		}
 
 		var card_category = "creatures";
 		if (type.toLowerCase().indexOf("creature") == -1) {card_category = "noncreatures";}
@@ -178,7 +196,7 @@ $(document).ready(function() {
 		var card_url = card.scryfall_uri;
 
 		var a = $("<a target='_blank' href='"+card_url+"' class='mtg-card'></a>");
-		var img = $("<img src='"+image+"'>");
+		var img = $("<img src='"+image+"' class='" + fix_border_class + "'>");
 		img.hide();
 		a.append(img);
 
@@ -214,11 +232,12 @@ $(document).ready(function() {
 
 				if (set == "DAR") {set = "DOM";} // Hopefully temporary, check back later, maybe erase
 
+				/*
 				if (set == "*") {
 					alert("Set unspecified for card '" + name + "'! For now, the API doesn't have a good way to search for cards without a set, so I'm gonna need you to specify one. Action aborted.");
 					return false;
 				}
-				//var dunno = match[4]; // just ignore it I guess
+				*/
 			} catch(e) {
 				alert("Error parsing deck: " + e);
 				return;
@@ -243,7 +262,7 @@ $(document).ready(function() {
 			}
 			*/
 
-			if (requests[set][0].length >= 50) { // the limit is 100 requests, but we're limiting ourselves to 50 to be safe
+			if (requests[set][0].length >= 25) { // the limit is 175 requests, but we're limiting ourselves to 25 to be safe
 				requests[set].unshift([]);
 			}
 
@@ -276,14 +295,13 @@ $(document).ready(function() {
 
 				num_requests++;
 				var x = $.get( url, function(data) {
-					console.log("input:",data);
 					$.each(data.data,function(idx,card) {
-						if (found_cards[card.name] == true) {return;}
-						found_cards[card.name] = true;
+						var name = card.name.split("//")[0].trim();
 
-						processCard(card,cards,function(c) {
-							return amount_by_name[c.name];
-						});
+						if (found_cards[name] == true) {return;}
+						found_cards[name] = true;
+
+						processCard(card,cards,amount_by_name[name]);
 					});
 				});
 
@@ -291,11 +309,16 @@ $(document).ready(function() {
 					num_requests--;
 
 					if (num_requests == 0) {
+						var not_found = [];
 						$.each(found_cards,function(name,b) {
 							if (b == false) {
-								alert("Card '" + name + "' not found! It's possible the API hasn't been updated yet.");
+								not_found.push(name);
 							}
 						});
+
+						if (not_found.length > 0) {
+							alert( "Card(s) '" + not_found.join(", ") + "' not found! It's possible the API hasn't been updated yet.");
+						}
 
 						displayCards(cards);
 						buildShareURL(cards);
@@ -335,7 +358,7 @@ $(document).ready(function() {
 				} else {
 					amount_by_multiverseid[value] = current_amount;
 
-					if (requests[0].length >= 100) {
+					if (requests[0].length >= 60) { // max is 75, limit to 60 to be safe
 						requests.unshift([]);
 					}
 
@@ -348,38 +371,47 @@ $(document).ready(function() {
 		var num_requests = 0;
 		var fetched_cards = {};
 
+		function convertCard(card) { // convert a few values from one api to the other
+			card.multiverse_ids = [card.multiverseid];
+			card.image_uris = {"png":card.imageUrl};
+			card.type_line = card.type;
+			card.scryfall_uri = "http://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=" + card.multiverseid;
+		}
+
 		$.each(requests,function(idx,multiverseids) {
+			num_requests++;
+
 			var params = {};
 			params.identifiers = [];
 			$.each(multiverseids,function(idx,m_id) {
 				params.identifiers.push({multiverse_id:m_id});
 			});
 
-			num_requests++;
-
-			//var request_string = $.param(params);
 			var url = "https://api.scryfall.com/cards/collection";
 			var x = $.ajax({
-				url:url,
-				type:"POST",
-				data:params,
-				contentType:"application/json; charset=utf-8",
+				url:"https://api.scryfall.com/cards/collection",
+				method:"POST",
+				data:JSON.stringify(params),
+				crossOrigin:true,
+				contentType:"application/json",
 				dataType:"json",
+				xhrFields: {
+					withCredentials: false
+				},
 				success: function(data){
-				  	console.log("url: ",data);
-					//var x = $.post( url, function(data) {
 					$.each(data.data,function(idx,card) {
 						if (fetched_cards[card.name] == true) {return;}
 						fetched_cards[card.name] = true;
 
-						processCard(card,cards,function(c) {
-							for(var i=0;i<c.multiverse_ids.length;i++) {
-								if (amount_by_multiverseid[c.multiverse_ids[i]]) {
-									return amount_by_multiverseid[c.multiverse_ids[i]];
-								}
+						var amount = 1;
+						for(var i=0;i<card.multiverse_ids.length;i++) {
+							if (amount_by_multiverseid[card.multiverse_ids[i]]) {
+								amount = amount_by_multiverseid[card.multiverse_ids[i]];
+								break;
 							}
-							return 1;
-						});
+						}
+
+						processCard(card,cards,amount);
 					});
 				}
 			});

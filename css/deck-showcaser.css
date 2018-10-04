@@ -85,6 +85,9 @@ body {
 	position:relative;
 	max-width:100%;
 	width:252px;
+	padding:4px;
+	border-radius:12px;
+	background-color:#14130e;
 }
 
 .mtg-card:hover img {

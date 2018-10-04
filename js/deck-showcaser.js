@@ -161,20 +161,21 @@ $(document).ready(function() {
 	}
 
 	function processCard(card,cards,get_amount) {
-		if (typeof card.imageUrl == "undefined") {
+		if (typeof card.image_uris == "undefined") {
 			alert("Warning: Card '" + card.name + "' doesn't have an image!");
 		}
 
 		var name = card.name;
 		var amount = get_amount(card) || 1;
-		var image = card.imageUrl;
-		var type = card.types[0];
+		var image = card.image_uris.border_crop;
+		var type = card.type_line;
 
 		var card_category = "creatures";
-		if (type != "Creature") {card_category = "noncreatures";}
-		if (type == "Land") {card_category = "lands";}
+		if (type.toLowerCase().indexOf("creature") == -1) {card_category = "noncreatures";}
+		if (type.toLowerCase().indexOf("land") != -1) {card_category = "lands";}
 
-		var card_url = "http://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=" + card.multiverseid;
+		//var card_url = "http://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=" + card.multiverseid;
+		var card_url = card.scryfall_uri;
 
 		var a = $("<a target='_blank' href='"+card_url+"' class='mtg-card'></a>");
 		var img = $("<img src='"+image+"'>");
@@ -188,7 +189,7 @@ $(document).ready(function() {
 			image: image,
 			a: a,
 			cmc: card.cmc,
-			multiverseid:card.multiverseid,
+			multiverseid:card.multiverse_ids[0],
 			'set': card.set
 		});
 	}
@@ -255,17 +256,28 @@ $(document).ready(function() {
 		$.each(requests,function(set,arr) {
 			$.each(arr,function(idx,names) {
 				var params = {};
-				params.name = names.join("|");
+
+				$.each(names,function(idx,name) {
+					names[idx] = "!\"" + name + "\""; // Prefix each name with "!" and add quotes " " which makes it an exact match
+				})
+
+				params.q = names.join(" or ");
+
 				if (set.indexOf("*") == -1) {
-					params.set = set;
+					params.q = "s:" + set + " (" + params.q + ")"; // Add set, and group all cards in brackets
 				}
 
+				params.unique = "cards"; // Always find one copy of each card
+				params.order = "released"; // Always sort by newest first
+				params.dir = "asc";
+
 				var request_string = $.param(params);
-				var url = "https://api.magicthegathering.io/v1/cards?" + request_string;
+				var url = "https://api.scryfall.com/cards/search?" + request_string;
 
 				num_requests++;
 				var x = $.get( url, function(data) {
-					$.each(data.cards,function(idx,card) {
+					console.log("input:",data);
+					$.each(data.data,function(idx,card) {
 						if (found_cards[card.name] == true) {return;}
 						found_cards[card.name] = true;
 
@@ -337,19 +349,39 @@ $(document).ready(function() {
 		var fetched_cards = {};
 
 		$.each(requests,function(idx,multiverseids) {
-			var request_string = $.param({multiverseid:multiverseids.join("|")});
-			var url = "https://api.magicthegathering.io/v1/cards?" + request_string;
+			var params = {};
+			params.identifiers = [];
+			$.each(multiverseids,function(idx,m_id) {
+				params.identifiers.push({multiverse_id:m_id});
+			});
 
 			num_requests++;
-			var x = $.get( url, function(data) {
-				$.each(data.cards,function(idx,card) {
-					if (fetched_cards[card.name] == true) {return;}
-					fetched_cards[card.name] = true;
 
-					processCard(card,cards,function(c) {
-						return amount_by_multiverseid[c.multiverseid];
+			//var request_string = $.param(params);
+			var url = "https://api.scryfall.com/cards/collection";
+			var x = $.ajax({
+				url:url,
+				type:"POST",
+				data:params,
+				contentType:"application/json; charset=utf-8",
+				dataType:"json",
+				success: function(data){
+				  	console.log("url: ",data);
+					//var x = $.post( url, function(data) {
+					$.each(data.data,function(idx,card) {
+						if (fetched_cards[card.name] == true) {return;}
+						fetched_cards[card.name] = true;
+
+						processCard(card,cards,function(c) {
+							for(var i=0;i<c.multiverse_ids.length;i++) {
+								if (amount_by_multiverseid[c.multiverse_ids[i]]) {
+									return amount_by_multiverseid[c.multiverse_ids[i]];
+								}
+							}
+							return 1;
+						});
 					});
-				});
+				}
 			});
 
 			x.always(function() {

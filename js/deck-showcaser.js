@@ -296,12 +296,10 @@ $(document).ready(function() {
 				num_requests++;
 				var x = $.get( url, function(data) {
 					$.each(data.data,function(idx,card) {
-						var name = card.name.split("//")[0].trim();
+						if (found_cards[card.name] == true) {return;}
+						found_cards[card.name] = true;
 
-						if (found_cards[name] == true) {return;}
-						found_cards[name] = true;
-
-						processCard(card,cards,amount_by_name[name]);
+						processCard(card,cards,amount_by_name[card.name]);
 					});
 				});
 

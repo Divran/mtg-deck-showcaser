@@ -97,6 +97,17 @@ body {
 	z-index:999999;
 }
 
+.mtg-card img.secondary-card {
+	display:none;
+	position:absolute;
+	top:0;
+	right:-100%;
+}
+
+.mtg-card:hover img.secondary-card {
+	display:block;
+}
+
 /* rows and columns */
 
 .mtg-row {

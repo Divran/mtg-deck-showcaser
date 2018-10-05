@@ -139,7 +139,9 @@ $(document).ready(function() {
 		function showImg(that) {
 			$(".card-counter",that.parent()).show();
 			$(".fake-card",that.parent()).remove();
-			that.show();
+			if (!that.hasClass("secondary-card")) {
+				that.show();
+			}
 		}
 
 		$("img",result).on("load", function() {
@@ -161,12 +163,10 @@ $(document).ready(function() {
 		setTimeout(function() {resizeFakeCards();},200);
 	}
 
-	function processCard(card,cards,amount) {
-		var name = card.name;
-		var type = card.type_line;
-		var image = undefined;
+	// returns {image:<string>,border_class:<string>}
+	function getCardImage(card) {
+		var image = "";
 		var fix_border_class = "";
-
 		var multi_images = {split:true, flip:true, transform:true, double_faced_token:true};
 		if (multi_images[card.layout]) {
 			if (card.card_faces[0].image_uris.border_crop) {
@@ -184,6 +184,16 @@ $(document).ready(function() {
 			}
 		}
 
+		return {image:image,border_class:fix_border_class};
+	}
+
+	function processCard(card,cards,amount) {
+		var name = card.name;
+		var type = card.type_line;
+		var image = getCardImage(card);
+		var fix_border_class = image.border_class;
+		image = image.image;
+
 		if (typeof image == "undefined") {
 			alert("Warning: Card '" + card.name + "' doesn't have an image!");
 		}
@@ -196,9 +206,20 @@ $(document).ready(function() {
 		var card_url = card.scryfall_uri;
 
 		var a = $("<a target='_blank' href='"+card_url+"' class='mtg-card'></a>");
-		var img = $("<img src='"+image+"' class='" + fix_border_class + "'>");
-		img.hide();
-		a.append(img);
+
+		if (typeof card.card_faces != "undefined") { // multiple faces, load all
+			// add images for other faces
+			for(var i=0;i<card.card_faces.length;i++) {
+				let m = getCardImage(card.card_faces[i]);
+				let img_2 = $("<img>").attr("src",m.image).addClass(m.border_class);
+				if (i>0) {img_2.addClass("secondary-card");}
+				a.append(img_2);
+			}
+		} else { // just one face, load it
+			var img = $("<img>").attr("src",image).addClass(fix_border_class);
+			img.hide();
+			a.append(img);
+		}
 
 		if (typeof cards[card_category] == "undefined") {cards[card_category] = [];}
 		cards[card_category].push({
@@ -299,7 +320,20 @@ $(document).ready(function() {
 						if (found_cards[card.name] == true) {return;}
 						found_cards[card.name] = true;
 
-						processCard(card,cards,amount_by_name[card.name]);
+						var amount = amount_by_name[card.name];
+
+						// checks for other card faces
+						if (typeof card.card_faces != "undefined") {
+							for(var i=0;i<card.card_faces.length;i++) {
+								found_cards[card.card_faces[i].name] = true;
+
+								if (typeof amount_by_name[card.card_faces[i].name] != "undefined") {
+									amount = amount_by_name[card.card_faces[i].name];
+								}
+							}
+						}
+
+						processCard(card,cards,amount);
 					});
 				});
 

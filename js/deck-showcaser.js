@@ -240,6 +240,7 @@ $(document).ready(function() {
 		var requests = {};
 		var amount_by_name = {};
 		var found_cards = {};
+		var error_parsing_deck = false;
 
 		$.each(lines,function(row,line) {
 			line = line.trim();
@@ -261,7 +262,8 @@ $(document).ready(function() {
 				*/
 			} catch(e) {
 				alert("Error parsing deck: " + e);
-				return;
+				error_parsing_deck = true;
+				return false;
 			}
 
 			amount_by_name[name] = amount;
@@ -289,6 +291,8 @@ $(document).ready(function() {
 
 			requests[set][0].push(name);
 		});
+
+		if (error_parsing_deck) {return;} // abort
 
 		var cards = {};
 		var num_requests = 0;

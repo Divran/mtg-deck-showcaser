@@ -64,7 +64,9 @@ $(document).ready(function() {
 		// first extract multiverseid and amount
 		$.each(cards,function(category,_cards) {
 			$.each(_cards,function(index,card) {
-				cards_list.push({amount:parseInt(card.amount),multiverseid:card.multiverseid})
+				if (typeof card.multiverseid != "undefined") {
+					cards_list.push({amount:parseInt(card.amount),multiverseid:card.multiverseid})
+				}
 			});
 		});
 
@@ -102,7 +104,10 @@ $(document).ready(function() {
 	function displayCards( cards ) {
 		var columns = resetResults();
 
+		var all_amount = 0;
 		$.each(cards,function(card_category,_cards) {
+			var total_amount = 0;
+
 			if (card_category == "lands") { // sort lands alphabetically
 				_cards.sort(function(a,b) {
 					return a.name.localeCompare(b.name);
@@ -122,6 +127,7 @@ $(document).ready(function() {
 
 			$.each(_cards,function(idx,card) {
 				var amount = card.amount;
+				total_amount += amount;
 
 				if (amount > 4) {
 					parent.append(card.a);
@@ -134,7 +140,13 @@ $(document).ready(function() {
 					}
 				}
 			});
+
+			all_amount += total_amount;
+			var that = $("strong",parent.parent());
+			that.text(that.text() + " (" + total_amount + ")");
 		});
+
+		result.prepend("<strong>Nr of cards: " + all_amount + "</strong><br>");
 
 		function showImg(that) {
 			$(".card-counter",that.parent()).show();
@@ -296,6 +308,7 @@ $(document).ready(function() {
 
 		var cards = {};
 		var num_requests = 0;
+		var no_mid = [];
 
 		$.each(requests,function(set,arr) {
 			$.each(arr,function(idx,names) {
@@ -323,6 +336,10 @@ $(document).ready(function() {
 					$.each(data.data,function(idx,card) {
 						if (found_cards[card.name] == true) {return;}
 						found_cards[card.name] = true;
+
+						if (card.multiverse_ids.length == 0) {
+							no_mid.push(card.name);
+						}
 
 						var amount = amount_by_name[card.name];
 
@@ -353,7 +370,13 @@ $(document).ready(function() {
 						});
 
 						if (not_found.length > 0) {
-							alert( "Card(s) '" + not_found.join(", ") + "' not found! It's possible the API hasn't been updated yet.");
+							alert( "Card(s) '" + not_found.join("; ") + "' not found! It's possible the API hasn't been updated yet.");
+						}
+
+						if (no_mid.length > 0) {
+							alert( "Card(s) '" + no_mid.join("; ") + "' have no multiverse id! "+
+									"These cards cannot be encoded into the URL and will therefore not show up if you send the link to someone. "+
+									"It's possible the API hasn't been updated yet." );
 						}
 
 						displayCards(cards);

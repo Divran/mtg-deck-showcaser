@@ -18,12 +18,16 @@
 			<div class="center">
 				<div class="width-limiter">
 					<div class="card" id="input-card">
-						<div class="card-body">
-							<p>Paste the exported deck data from a source such as MTG Arena into the text box below and click OK</p>
-							<textarea id="input" class="form-control"></textarea>
+						<div class="collapse">
+							<div class="card-body">
+								<p>Paste the exported deck data from a source such as MTG Arena into the text box below and click Load.<br>
+									<small>(Currently only supports MTG Arena format)</small></p>
+								<textarea id="input" class="form-control"></textarea>
+							</div>
 						</div>
 						<div class="card-footer">
-							<div class="btn btn-primary">Ok</div>
+							<div class="btn btn-primary">Load deck</div>
+							<div class="btn btn-sm btn-primary" style="display:none;">Load another deck</div>
 						</div>
 					</div>
 

@@ -12,15 +12,15 @@ body {
 /* inputs */
 
 #input-card #input {
-	height:450px;
-}
-
-#input-card #input.loaded {
-	height:50px;
+	height:700px;
 }
 
 .btn-light {
 	background-color: #e7e8e8 !important;
+}
+
+#input-card .card-footer {
+	text-align:center;
 }
 
 /* credits */
@@ -42,11 +42,10 @@ body {
 }
 
 .center .width-limiter {
-	max-width:800px;
 	display:inline-block;
 }
 
-.center .width-limiter #input-card {
+.center #input-card {
 	text-align:left;
 }
 

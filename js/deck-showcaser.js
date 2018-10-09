@@ -1,4 +1,5 @@
 $(document).ready(function() {
+	var input_card = $("#input-card");
 	var btn = $( "#input-card .btn" );
 	var input = $( "#input-card #input" );
 	var result = $( "#result-card #result-body" );
@@ -58,6 +59,7 @@ $(document).ready(function() {
 	}
 
 	// Build share URL
+	var SHARE_URL_VERSION = 1;
 	function buildShareURL( cards ) {
 		var cards_list = [];
 
@@ -77,6 +79,10 @@ $(document).ready(function() {
 		});
 
 		var query_list = [];
+
+		// Always insert the version first
+		query_list.push(SHARE_URL_VERSION);
+
 		var special_chars = ["","a","b","c","d"]; // a=1,b=2,c=3,d=4 cards
 		var last_amount = 1;
 		$.each(cards_list,function(idx,card) {
@@ -108,19 +114,13 @@ $(document).ready(function() {
 		$.each(cards,function(card_category,_cards) {
 			var total_amount = 0;
 
-			if (card_category == "lands") { // sort lands alphabetically
-				_cards.sort(function(a,b) {
+			_cards.sort(function(a,b) {
+				if (a.cmc == b.cmc) {
+					// if cmc is the same, sort by name
 					return a.name.localeCompare(b.name);
-				});
-			} else { // sort other cards by CMC
-				_cards.sort(function(a,b) {
-					if (a.cmc == b.cmc) {
-						// if cmc is the same, sort by name
-						return a.name.localeCompare(b.name);
-					}
-					return a.cmc < b.cmc ? -1 : 1;
-				});
-			}
+				}
+				return a.cmc < b.cmc ? -1 : 1;
+			});
 
 			var parent = columns[card_category];
 			var num_child = 0;
@@ -143,7 +143,35 @@ $(document).ready(function() {
 
 			all_amount += total_amount;
 			var that = $("strong",parent.parent());
-			that.text(that.text() + " (" + total_amount + ")");
+			that.html(that.text() + " (<span class='mtg-list-amount'>" + total_amount + "</span>)");
+		});
+
+		// Automatically split columns up if they're too tall
+		var split_count = all_amount / 5; // if a column is this large, attempt split
+		var min_split_count = 6; // only split if the resulting column has at least this many cards
+		$.each(columns,function(card_category,pnl) {
+			var children = pnl.children();
+			var child_count = children.length;
+			if (child_count > split_count) {
+				var new_pnl = pnl.parent().clone();
+				$(".mtg-list",new_pnl).empty();
+				var move_children = [];
+				var previous_url = "";
+				for(var i=0;i<child_count;i++) {
+					if (i>Math.floor(child_count/2) && $(children[i]).attr("href") != previous_url) {
+						move_children.push(children[i]);
+					} else {
+						previous_url = $(children[i]).attr("href");
+					}
+				}
+
+				if (move_children.length > min_split_count) {
+					$(move_children).detach().appendTo($(".mtg-list",new_pnl));
+					new_pnl.insertAfter(pnl.parent());
+					$(".mtg-list-amount",pnl.parent()).text(child_count - move_children.length);
+					$(".mtg-list-amount",new_pnl).text(move_children.length);
+				}
+			}
 		});
 
 		result.prepend("<strong>Nr of cards: " + all_amount + "</strong><br>");
@@ -170,7 +198,6 @@ $(document).ready(function() {
 		});
 
 		$("#result-card .collapse").collapse("show");
-		input.addClass("loaded");
 		resizeFakeCards();
 		setTimeout(function() {resizeFakeCards();},200);
 	}
@@ -306,6 +333,8 @@ $(document).ready(function() {
 
 		if (error_parsing_deck) {return;} // abort
 
+		hideInput();
+
 		var cards = {};
 		var num_requests = 0;
 		var no_mid = [];
@@ -395,6 +424,12 @@ $(document).ready(function() {
 		var split = decompressed.split(",");
 		if (split.length == 0) {return;}
 
+		// First number is always the version of the encoded string, extract it
+		var version = split.splice(0,1)[0];
+		// Currently there's only one version so no extra behavior is processed here, but could be in the future
+
+		if (split.length == 0) {return;} // check if the string has any data again
+
 		var special_chars = {"b":2,"c":3,"d":4};
 
 		var amount_by_multiverseid = {};
@@ -426,6 +461,7 @@ $(document).ready(function() {
 			}
 		});
 
+		hideInput();
 		var cards = {};
 		var num_requests = 0;
 		var fetched_cards = {};
@@ -486,7 +522,30 @@ $(document).ready(function() {
 		});
 	}
 
-	btn.click(function() {loadCardsFromInput();});
+	var btn_other_deck = $(".btn-sm",input_card);
+	function hideInput() {
+		btn.hide();
+		btn_other_deck.show();
+		$(".collapse",input_card).collapse("hide");
+	}
+
+	function showInput() {
+		btn.show();
+		btn_other_deck.hide();
+		$(".collapse",input_card).collapse("show");
+	}
+
+	var old_input_text = "";
+	btn.click(function() {
+		if (old_input_text == input.val()) {
+			hideInput(); return;
+		}
+		old_input_text = input.val();
+
+		loadCardsFromInput();
+	});
+
+	btn_other_deck.click(showInput);
 
 	if (location.hash != "") {
 		loadCardsFromURL();

@@ -1,6 +1,6 @@
 $(document).ready(function() {
 	var input_card = $("#input-card");
-	var btn = $( "#input-card .btn" );
+	var btn = $( "#input-card .load-deck-btn" );
 	var input = $( "#input-card #input" );
 	var result = $( "#result-card #result-body" );
 	input.focus(function() {
@@ -36,28 +36,42 @@ $(document).ready(function() {
 	// Fill text box
 	function buildCardInputBox( cards ) {
 		var cards_list = [];
+		var sideboard_list = [];
 
 		// first extract amount, name, and set
 		$.each(cards,function(category,_cards) {
+			var list = cards_list;
+			if (category == "sideboard") {list = sideboard_list;}
 			$.each(_cards,function(index,card) {
-				cards_list.push({amount:card.amount,name:card.name,'set':card.set});
+				list.push({amount:card.amount,name:card.name,'set':card.set});
 			});
 		});
 
 		// Sort by card amount, or alphabetically if they're the same
-		cards_list.sort(function(a,b) {
+		function sort_func(a,b) {
 			if (a.amount == b.amount) {
 				return a.name.localeCompare(b.name);
 			}
 			return (a.amount < b.amount) ? -1 : 1;
-		});
+		}
+		cards_list.sort(sort_func);
+		sideboard_list.sort(sort_func);
 
 		// convert into string
-		$.each(cards_list,function(idx,card) {
-			cards_list[idx] = card.amount + " " + card.name + " (" + card.set + ")";
-		});
+		function appendCards(list) {
+			var ret = [];
+			$.each(list,function(idx,card) {
+				ret.push(card.amount + " " + card.name + " (" + card.set + ")");
+			});
+			return ret.join("\n");
+		}
 
-		input.val(cards_list.join("\n"));
+		var cards_str = appendCards(cards_list);
+		if (sideboard_list.length > 0) {
+			cards_str += "\n\n" + appendCards(sideboard_list);
+		}
+
+		input.val(cards_str);
 	}
 
 	// Build share URL
@@ -599,7 +613,7 @@ $(document).ready(function() {
 		}
 	}
 
-	var btn_other_deck = $(".btn-sm",input_card);
+	var btn_other_deck = $(".open-input-btn",input_card);
 	function hideInput() {
 		btn.hide();
 		btn_other_deck.show();

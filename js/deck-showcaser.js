@@ -24,8 +24,10 @@ $(document).ready(function() {
 		var creatures = $("<div class='mtg-col'><strong>Creatures</strong><div class='mtg-list'></div></div>");
 		var noncreatures = $("<div class='mtg-col'><strong>Non-creatures</strong><div class='mtg-list'></div></div>");
 		var lands = $("<div class='mtg-col'><strong>Lands</strong><div class='mtg-list'></div></div>");
-		var columns = {"creatures":$(".mtg-list",creatures),"noncreatures":$(".mtg-list",noncreatures),"lands":$(".mtg-list",lands)};
-		row.append([creatures,noncreatures,lands]);
+		var sideboard = $( "<div class='mtg-col'><strong>Sideboard</strong><div class='mtg-list'></div></div>");
+		var columns = { "creatures":$(".mtg-list",creatures),"noncreatures":$(".mtg-list",noncreatures),
+						"lands":$(".mtg-list",lands),"sideboard":$(".mtg-list",sideboard)};
+		row.append([creatures,noncreatures,lands,sideboard]);
 		result.append(row);
 
 		return columns;
@@ -62,48 +64,68 @@ $(document).ready(function() {
 	var SHARE_URL_VERSION = 1;
 	function buildShareURL( cards ) {
 		var cards_list = [];
+		var sideboard_list = [];
 
 		// first extract multiverseid and amount
 		$.each(cards,function(category,_cards) {
+			var list = cards_list;
+			if (category == "sideboard") {list = sideboard_list;}
+
 			$.each(_cards,function(index,card) {
 				if (typeof card.multiverseid != "undefined") {
-					cards_list.push({amount:parseInt(card.amount),multiverseid:card.multiverseid})
+					list.push({
+						amount:parseInt(card.amount),
+						multiverseid:card.multiverseid
+					});
 				}
 			});
 		});
 
 		// Sort by card amount
-		cards_list.sort(function(a,b) {
+		function sort_func(a,b) {
 			if (a.amount == b.amount) {return 0;}
 			return (a.amount < b.amount) ? -1 : 1;
-		});
+		}
+		cards_list.sort(sort_func);
+		sideboard_list.sort(sort_func);
 
 		var query_list = [];
 
+		function appendCards(list) {
+			var special_chars = ["","a","b","c","d"]; // a=1,b=2,c=3,d=4 cards
+			var last_amount = 1;
+			$.each(list,function(idx,card) {
+				// if the card amount changes, insert a special character as long as amount <= 4, or else insert the literal amount
+				if (card.amount <= 4) {
+					if (card.amount != last_amount) {
+						query_list.push(special_chars[card.amount]);
+						last_amount = card.amount;
+					}
+				} else {
+					if (last_amount != 0) {
+						query_list.push("n"); // n="normal", count each card individually
+						last_amount = 0;
+					}
+					query_list.push(card.amount);
+				}
+
+				query_list.push(card.multiverseid);
+			});
+		}
+
+		appendCards(cards_list);
+
+		var query_string = query_list.join(",");
+
+		if (sideboard_list.length > 0) {
+			query_list = [];
+			appendCards(sideboard_list);
+			query_string += "s" + query_list.join(","); // s="sideboard"
+		}
+
 		// Always insert the version first
-		query_list.push(SHARE_URL_VERSION);
-
-		var special_chars = ["","a","b","c","d"]; // a=1,b=2,c=3,d=4 cards
-		var last_amount = 1;
-		$.each(cards_list,function(idx,card) {
-			// if the card amount changes, insert a special character as long as amount <= 4, or else insert the literal amount
-			if (card.amount <= 4) {
-				if (card.amount != last_amount) {
-					query_list.push(special_chars[card.amount]);
-					last_amount = card.amount;
-				}
-			} else {
-				if (last_amount != 0) {
-					query_list.push("n"); // n="normal", count each card individually
-					last_amount = 0;
-				}
-				query_list.push(card.amount);
-			}
-
-			query_list.push(card.multiverseid);
-		});
-
-		location.hash = LZString.compressToEncodedURIComponent(query_list.join(","));
+		query_string = SHARE_URL_VERSION + query_string;
+		location.hash = LZString.compressToEncodedURIComponent(query_string);
 	}
 
 	// Displays cards
@@ -141,17 +163,26 @@ $(document).ready(function() {
 				}
 			});
 
-			all_amount += total_amount;
+			if (card_category != "sideboard") {
+				all_amount += total_amount;
+			}
 			var that = $("strong",parent.parent());
 			that.html(that.text() + " (<span class='mtg-list-amount'>" + total_amount + "</span>)");
 		});
 
 		// Automatically split columns up if they're too tall
+		// Also checks if columns are empty and hides them
 		var split_count = all_amount / 5; // if a column is this large, attempt split
 		var min_split_count = 6; // only split if the resulting column has at least this many cards
 		$.each(columns,function(card_category,pnl) {
 			var children = pnl.children();
 			var child_count = children.length;
+
+			if (child_count == 0) {
+				pnl.parent().hide();
+				return;
+			}
+
 			if (child_count > split_count) {
 				var new_pnl = pnl.parent().clone();
 				$(".mtg-list",new_pnl).empty();
@@ -208,25 +239,31 @@ $(document).ready(function() {
 		var fix_border_class = "";
 		var multi_images = {split:true, flip:true, transform:true, double_faced_token:true};
 		if (multi_images[card.layout]) {
-			if (card.card_faces[0].image_uris.border_crop) {
-				image = card.card_faces[0].image_uris.border_crop;
-				fix_border_class = "fix-border";
-			} else {
-				image = card.card_faces[0].image_uris.png;
+			if (card.card_faces[0].image_uris) {
+				if (card.card_faces[0].image_uris.border_crop) {
+					image = card.card_faces[0].image_uris.border_crop;
+					fix_border_class = "fix-border";
+				} else {
+					image = card.card_faces[0].image_uris.png;
+				}
 			}
-		} else {
-			if (card.image_uris.border_crop) {
-				image = card.image_uris.border_crop;
-				fix_border_class = "fix-border";
-			} else {
-				image = card.image_uris.png;
+		}
+
+		if (image == "") {
+			if (card.image_uris) {
+				if (card.image_uris.border_crop) {
+					image = card.image_uris.border_crop;
+					fix_border_class = "fix-border";
+				} else {
+					image = card.image_uris.png;
+				}
 			}
 		}
 
 		return {image:image,border_class:fix_border_class};
 	}
 
-	function processCard(card,cards,amount) {
+	function processCard(card,cards,amount,in_sideboard) {
 		var name = card.name;
 		var type = card.type_line;
 		var image = getCardImage(card);
@@ -238,8 +275,12 @@ $(document).ready(function() {
 		}
 
 		var card_category = "creatures";
-		if (type.toLowerCase().indexOf("creature") == -1) {card_category = "noncreatures";}
-		if (type.toLowerCase().indexOf("land") != -1) {card_category = "lands";}
+		if (in_sideboard) {
+			card_category = "sideboard";
+		} else {
+			if (type.toLowerCase().indexOf("creature") == -1) {card_category = "noncreatures";}
+			if (type.toLowerCase().indexOf("land") != -1) {card_category = "lands";}
+		}
 
 		//var card_url = "http://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=" + card.multiverseid;
 		var card_url = card.scryfall_uri;
@@ -248,8 +289,14 @@ $(document).ready(function() {
 
 		if (typeof card.card_faces != "undefined") { // multiple faces, load all
 			// add images for other faces
-			for(var i=0;i<card.card_faces.length;i++) {
+			var len = card.card_faces.length;
+			for(var i=0;i<len;i++) {
 				let m = getCardImage(card.card_faces[i]);
+				if (m.image == "") { // no image was found, fall back to the base image and abort
+					m.image = image;
+					m.border_class = fix_border_class;
+					len = -1; // abort after this
+				}
 				let img_2 = $("<img>").attr("src",m.image).addClass(m.border_class);
 				if (i>0) {img_2.addClass("secondary-card");}
 				a.append(img_2);
@@ -278,11 +325,20 @@ $(document).ready(function() {
 
 		var requests = {};
 		var amount_by_name = {};
+		var amount_by_name_set = {};
 		var found_cards = {};
 		var error_parsing_deck = false;
 
+		var in_sideboard = false;
+
 		$.each(lines,function(row,line) {
 			line = line.trim();
+
+			if (line == "" || line.toLowerCase().indexOf("sideboard") != -1) {
+				in_sideboard = true;
+				return;
+			}
+
 			try {
 				var re = /^(\d*) (.*?) ?(\((.*?)\))? ?(\d*)?$/i;
 				var match = line.match(re);
@@ -305,24 +361,17 @@ $(document).ready(function() {
 				return false;
 			}
 
-			amount_by_name[name] = amount;
-			found_cards[name] = false;
+			if (in_sideboard) {
+				set = "SIDEBOARD" + set;
+			}
+
+			amount_by_name[name.toLowerCase()] = amount;
+			amount_by_name_set[name.toLowerCase() + set.toLowerCase()] = amount;
+			found_cards[name.toLowerCase()] = false;
 
 			if (typeof requests[set] == "undefined") {
 				requests[set] = [[]];
 			}
-
-			// Special case for requesting basic lands with no set specified
-			/*
-			if (set == "*") {
-				var lands = {"Plains":true,"Mountain":true,"Swamp":true,"Forest":true,"Island":true};
-				if (typeof lands[name] != "undefined") {
-					if (typeof requests["*BasicLands"] == "undefined") {requests["*BasicLands"] = [];}
-					requests["*BasicLands"].push([name]);
-					return;
-				}
-			}
-			*/
 
 			if (requests[set][0].length >= 25) { // the limit is 175 requests, but we're limiting ourselves to 25 to be safe
 				requests[set].unshift([]);
@@ -349,9 +398,15 @@ $(document).ready(function() {
 
 				params.q = names.join(" or ");
 
+				var in_sideboard = false;
+				if (set.indexOf("SIDEBOARD") == 0) {
+					set = set.substr(9);
+					in_sideboard = true;
+				}
+
 				if (set.indexOf("*") == -1) {
 					params.q = "s:" + set + " (" + params.q + ")"; // Add set, and group all cards in brackets
-				}
+				} 
 
 				params.unique = "cards"; // Always find one copy of each card
 				params.order = "released"; // Always sort by newest first
@@ -363,27 +418,32 @@ $(document).ready(function() {
 				num_requests++;
 				var x = $.get( url, function(data) {
 					$.each(data.data,function(idx,card) {
-						if (found_cards[card.name] == true) {return;}
-						found_cards[card.name] = true;
+						//if (found_cards[card.name] == true) {return;}
+						found_cards[card.name.toLowerCase()] = true;
 
 						if (card.multiverse_ids.length == 0) {
 							no_mid.push(card.name);
 						}
 
-						var amount = amount_by_name[card.name];
+						var amount = (amount_by_name_set[card.name.toLowerCase() + card.set] || amount_by_name[card.name.toLowerCase()]) || 0;
 
 						// checks for other card faces
-						if (typeof card.card_faces != "undefined") {
-							for(var i=0;i<card.card_faces.length;i++) {
-								found_cards[card.card_faces[i].name] = true;
+						if (amount == 0) {
+							if (typeof card.card_faces != "undefined") {
+								for(var i=0;i<card.card_faces.length;i++) {
+									let face = card.card_faces[i];
+									found_cards[face.name.toLowerCase()] = true;
 
-								if (typeof amount_by_name[card.card_faces[i].name] != "undefined") {
-									amount = amount_by_name[card.card_faces[i].name];
+									if (typeof amount_by_name_set[face.name.toLowerCase() + face.set] != "undefined") {
+										amount = amount_by_name_set[face.name.toLowerCase() + face.set];
+									} else if (typeof amount_by_name[face.name.toLowerCase()] != "undefined") {
+										amount = amount_by_name[face.name.toLowerCase()];
+									}
 								}
 							}
 						}
 
-						processCard(card,cards,amount);
+						processCard(card,cards,amount,in_sideboard);
 					});
 				});
 
@@ -420,106 +480,123 @@ $(document).ready(function() {
 		var txt = location.hash.substr(1);
 		var decompressed = LZString.decompressFromEncodedURIComponent(txt);
 		if (decompressed == "" || decompressed == null) {return;}
-		
-		var split = decompressed.split(",");
-		if (split.length == 0) {return;}
 
-		// First number is always the version of the encoded string, extract it
-		var version = split.splice(0,1)[0];
+		// First character is always the version of the encoded string, extract it
+		var version = decompressed.substr(0,1);
 		// Currently there's only one version so no extra behavior is processed here, but could be in the future
+		decompressed = decompressed.substr(1);
 
-		if (split.length == 0) {return;} // check if the string has any data again
+		// if the user is using an old version of an url, there might be a comma in the beginning, remove it
+		if (decompressed.substr(0,1) == ",") {
+			decompressed = decompressed.substr(1);
+		}
 
-		var special_chars = {"b":2,"c":3,"d":4};
+		// first split by sideboard
+		var split_sideboard = decompressed.split("s");
 
 		var amount_by_multiverseid = {};
-		var requests = [[]];
+		
+		function readData(str) {
+			var requests = [[]];
 
-		var current_amount = 1;
-		var literal_amount = false;
-		var literal_amount_step = false;
-		$.each(split,function(idx,value) {
-			if (value == "n") {
-				literal_amount = true;
-			} else if (typeof special_chars[value] != "undefined") {
-				current_amount = special_chars[value];
-			} else {
-				value = parseInt(value);
-				if (literal_amount) literal_amount_step = !literal_amount_step;
+			var split = str.split(",");
+			if (split.length == 0) {return;}
 
-				if (literal_amount && literal_amount_step) {
-					current_amount = value;
+			var special_chars = {"b":2,"c":3,"d":4};
+
+			var current_amount = 1;
+			var literal_amount = false;
+			var literal_amount_step = false;
+			$.each(split,function(idx,value) {
+				if (value == "n") {
+					literal_amount = true;
+				} else if (typeof special_chars[value] != "undefined") {
+					current_amount = special_chars[value];
 				} else {
-					amount_by_multiverseid[value] = current_amount;
+					value = parseInt(value);
+					if (literal_amount) literal_amount_step = !literal_amount_step;
 
-					if (requests[0].length >= 60) { // max is 75, limit to 60 to be safe
-						requests.unshift([]);
+					if (literal_amount && literal_amount_step) {
+						current_amount = value;
+					} else {
+						amount_by_multiverseid[value] = current_amount;
+
+						if (requests[0].length >= 60) { // max is 75, limit to 60 to be safe
+							requests.unshift([]);
+						}
+
+						requests[0].push(value);
 					}
-
-					requests[0].push(value);
 				}
-			}
-		});
+			});
+
+			return requests;
+		}
+
+		var requests = readData(split_sideboard[0]);
+		var requests_sideboard;
+		if (typeof split_sideboard[1] != "undefined") {
+			requests_sideboard = readData(split_sideboard[1]);
+		}
 
 		hideInput();
 		var cards = {};
 		var num_requests = 0;
 		var fetched_cards = {};
 
-		function convertCard(card) { // convert a few values from one api to the other
-			card.multiverse_ids = [card.multiverseid];
-			card.image_uris = {"png":card.imageUrl};
-			card.type_line = card.type;
-			card.scryfall_uri = "http://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=" + card.multiverseid;
+		function processRequests(req,is_sideboard) {
+			$.each(req,function(idx,multiverseids) {
+				num_requests++;
+
+				var params = {};
+				params.identifiers = [];
+				$.each(multiverseids,function(idx,m_id) {
+					params.identifiers.push({multiverse_id:m_id});
+				});
+
+				var url = "https://api.scryfall.com/cards/collection";
+				var x = $.ajax({
+					url:"https://api.scryfall.com/cards/collection",
+					method:"POST",
+					data:JSON.stringify(params),
+					crossOrigin:true,
+					contentType:"application/json",
+					dataType:"json",
+					xhrFields: {
+						withCredentials: false
+					},
+					success: function(data){
+						$.each(data.data,function(idx,card) {
+							fetched_cards[card.name] = true;
+
+							var amount = 1;
+							for(var i=0;i<card.multiverse_ids.length;i++) {
+								if (amount_by_multiverseid[card.multiverse_ids[i]]) {
+									amount = amount_by_multiverseid[card.multiverse_ids[i]];
+									break;
+								}
+							}
+
+							processCard(card,cards,amount,is_sideboard);
+						});
+					}
+				});
+
+				x.always(function() {
+					num_requests--;
+
+					if (num_requests == 0) {
+						displayCards(cards);
+						buildCardInputBox(cards);
+					}
+				})
+			});
 		}
 
-		$.each(requests,function(idx,multiverseids) {
-			num_requests++;
-
-			var params = {};
-			params.identifiers = [];
-			$.each(multiverseids,function(idx,m_id) {
-				params.identifiers.push({multiverse_id:m_id});
-			});
-
-			var url = "https://api.scryfall.com/cards/collection";
-			var x = $.ajax({
-				url:"https://api.scryfall.com/cards/collection",
-				method:"POST",
-				data:JSON.stringify(params),
-				crossOrigin:true,
-				contentType:"application/json",
-				dataType:"json",
-				xhrFields: {
-					withCredentials: false
-				},
-				success: function(data){
-					$.each(data.data,function(idx,card) {
-						if (fetched_cards[card.name] == true) {return;}
-						fetched_cards[card.name] = true;
-
-						var amount = 1;
-						for(var i=0;i<card.multiverse_ids.length;i++) {
-							if (amount_by_multiverseid[card.multiverse_ids[i]]) {
-								amount = amount_by_multiverseid[card.multiverse_ids[i]];
-								break;
-							}
-						}
-
-						processCard(card,cards,amount);
-					});
-				}
-			});
-
-			x.always(function() {
-				num_requests--;
-
-				if (num_requests == 0) {
-					displayCards(cards);
-					buildCardInputBox(cards);
-				}
-			})
-		});
+		processRequests(requests,false);
+		if (typeof requests_sideboard != "undefined") {
+			processRequests(requests_sideboard,true);
+		}
 	}
 
 	var btn_other_deck = $(".btn-sm",input_card);

@@ -347,11 +347,11 @@ $(document).ready(function() {
 		var lines = txt.split("\n");
 
 		var requests = {};
+		var requests_sideboard = {};
 		var found_cards = {};
 		var error_parsing_deck = false;
 
 		var in_sideboard = false;
-		var in_sideboard_changed = false;
 
 		$.each(lines,function(row,line) {
 			line = line.trim();
@@ -376,23 +376,23 @@ $(document).ready(function() {
 				return false;
 			}
 
-			if (typeof requests[set] == "undefined") {
-				requests[set] = [];
+			var r = requests;
+			if (in_sideboard) {r = requests_sideboard;}
+
+			if (typeof r[set] == "undefined") {
+				r[set] = [];
 			}
 
-			if ((requests[set].length == 0) ||
-				(in_sideboard && !in_sideboard_changed) || // new list if we've entered the sideboard
-				requests[set][0].names.length >= 100) { // the limit is 175 requests, but we're limiting ourselves to 100 to be safe
-				requests[set].unshift({
+			if ((r[set].length == 0) ||
+				r[set][0].names.length >= 100) { // the limit is 175 requests, but we're limiting ourselves to 100 to be safe
+				r[set].unshift({
 					names: [],
-					amount_by_name: {},
-					in_sideboard: in_sideboard
+					amount_by_name: {}
 				});
 			}
 
-			if (in_sideboard) {in_sideboard_changed = true;}
-			requests[set][0].names.push(name);
-			requests[set][0].amount_by_name[name.toLowerCase()] = amount;
+			r[set][0].names.push(name);
+			r[set][0].amount_by_name[name.toLowerCase()] = amount;
 			found_cards[name.toLowerCase()] = false;
 		});
 
@@ -404,90 +404,94 @@ $(document).ready(function() {
 		var num_requests = 0;
 		var no_mid = [];
 
-		$.each(requests,function(set,arr) {
-			$.each(arr,function(idx,request) {
-				var names = request.names;
-				var amount_by_name = request.amount_by_name;
-				var in_sideboard = request.in_sideboard;
+		function processRequests(r, in_sideboard) {
+			$.each(r,function(set,arr) {
+				$.each(arr,function(idx,request) {
+					var names = request.names;
+					var amount_by_name = request.amount_by_name;
 
-				var params = {};
+					var params = {};
 
-				$.each(names,function(idx,name) {
-					names[idx] = "!\"" + name + "\""; // Prefix each name with "!" and add quotes " " which makes it an exact match
-				});
+					$.each(names,function(idx,name) {
+						names[idx] = "!\"" + name + "\""; // Prefix each name with "!" and add quotes " " which makes it an exact match
+					});
 
-				params.q = names.join(" or ");
+					params.q = names.join(" or ");
 
-				if (set.indexOf("*") == -1) {
-					params.q = "s:" + set + " (" + params.q + ")"; // Add set, and group all cards in brackets
-				} 
+					if (set.indexOf("*") == -1) {
+						params.q = "s:" + set + " (" + params.q + ")"; // Add set, and group all cards in brackets
+					} 
 
-				params.unique = "cards"; // Always find one copy of each card
-				params.order = "released"; // Always sort by newest first
-				params.dir = "asc";
+					params.unique = "cards"; // Always find one copy of each card
+					params.order = "released"; // Always sort by newest first
+					params.dir = "asc";
 
-				var request_string = $.param(params);
-				var url = "https://api.scryfall.com/cards/search?" + request_string;
+					var request_string = $.param(params);
+					var url = "https://api.scryfall.com/cards/search?" + request_string;
 
-				num_requests++;
-				var x = $.get( url, function(data) {
-					$.each(data.data,function(idx,card) {
-						//if (found_cards[card.name] == true) {return;}
-						var name = card.name.toLowerCase();
-						found_cards[name] = true;
+					num_requests++;
+					var x = $.get( url, function(data) {
+						$.each(data.data,function(idx,card) {
+							//if (found_cards[card.name] == true) {return;}
+							var name = card.name.toLowerCase();
+							found_cards[name] = true;
 
-						if (card.multiverse_ids.length == 0) {
-							no_mid.push(card.name);
-						}
+							if (card.multiverse_ids.length == 0) {
+								no_mid.push(card.name);
+							}
 
-						var amount = amount_by_name[name] || 0;
+							var amount = amount_by_name[name] || 0;
 
-						// checks for other card faces
-						if (amount == 0) {
-							if (typeof card.card_faces != "undefined") {
-								for(var i=0;i<card.card_faces.length;i++) {
-									let face = card.card_faces[i];
-									let face_name = face.name.toLowerCase();
-									found_cards[face_name] = true;
+							// checks for other card faces
+							if (amount == 0) {
+								if (typeof card.card_faces != "undefined") {
+									for(var i=0;i<card.card_faces.length;i++) {
+										let face = card.card_faces[i];
+										let face_name = face.name.toLowerCase();
+										found_cards[face_name] = true;
 
-									if (typeof amount_by_name[face_name] != "undefined") {
-										amount = amount_by_name[face_name];
+										if (typeof amount_by_name[face_name] != "undefined") {
+											amount = amount_by_name[face_name];
+										}
 									}
 								}
 							}
-						}
 
-						processCard(card,cards,amount,in_sideboard);
-					});
-				});
-
-				x.always(function() {
-					num_requests--;
-
-					if (num_requests == 0) {
-						var not_found = [];
-						$.each(found_cards,function(name,b) {
-							if (b == false) {
-								not_found.push(name);
-							}
+							processCard(card,cards,amount,in_sideboard);
 						});
+					});
 
-						if (not_found.length > 0) {
-							alert( "Card(s) '" + not_found.join("; ") + "' not found! It's possible the API hasn't been updated yet.");
+					x.always(function() {
+						num_requests--;
+
+						if (num_requests == 0) {
+							var not_found = [];
+							$.each(found_cards,function(name,b) {
+								if (b == false) {
+									not_found.push(name);
+								}
+							});
+
+							if (not_found.length > 0) {
+								alert( "Card(s) '" + not_found.join("; ") + "' not found! It's possible the API hasn't been updated yet.");
+							}
+
+							if (no_mid.length > 0) {
+								alert( "Card(s) '" + no_mid.join("; ") + "' have no multiverse IDs!\n"+
+										"These cards cannot be encoded into the URL and will therefore not show up if you send the link to someone.\n"+
+										"Try specifying a different set for these cards. Some reprints don't have multiverseids. It's also possible the API hasn't been updated yet." );
+							}
+
+							displayCards(cards);
+							buildShareURL(cards);
 						}
-
-						if (no_mid.length > 0) {
-							alert( "Card(s) '" + no_mid.join("; ") + "' have no multiverse IDs!\n"+
-									"These cards cannot be encoded into the URL and will therefore not show up if you send the link to someone.\n"+
-									"Try specifying a different set for these cards. Some reprints don't have multiverseids. It's also possible the API hasn't been updated yet." );
-						}
-
-						displayCards(cards);
-						buildShareURL(cards);
-					}
-				})
+					})
+				});
 			});
-		});
+		}
+
+		processRequests(requests,false);
+		processRequests(requests_sideboard,true);
 	}
 
 	function loadCardsFromURL() {

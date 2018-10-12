@@ -292,8 +292,17 @@ $(document).ready(function() {
 		if (in_sideboard) {
 			card_category = "sideboard";
 		} else {
-			if (type.toLowerCase().indexOf("creature") == -1) {card_category = "noncreatures";}
-			if (type.toLowerCase().indexOf("land") != -1) {card_category = "lands";}
+			if (card.card_faces && card.card_faces[0].type_line) { // check 1st face of card
+				if (card.card_faces[0].type_line.toLowerCase().indexOf("creature") == -1) {card_category = "noncreatures";}
+			} else { // check main type line
+				if (type.toLowerCase().indexOf("creature") == -1) {card_category = "noncreatures";}
+			}
+
+			if (card.card_faces && card.card_faces[0].type_line) { // check 1st face of card
+				if (card.card_faces[0].type_line.toLowerCase().indexOf("land") != -1) {card_category = "lands";}
+			} else { // check main type line
+				if (type.toLowerCase().indexOf("land") != -1) {card_category = "lands";}
+			}
 		}
 
 		//var card_url = "http://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=" + card.multiverseid;
@@ -338,12 +347,11 @@ $(document).ready(function() {
 		var lines = txt.split("\n");
 
 		var requests = {};
-		var amount_by_name = {};
-		var amount_by_name_set = {};
 		var found_cards = {};
 		var error_parsing_deck = false;
 
 		var in_sideboard = false;
+		var in_sideboard_changed = false;
 
 		$.each(lines,function(row,line) {
 			line = line.trim();
@@ -362,36 +370,30 @@ $(document).ready(function() {
 				var set = match[4] || "*";
 
 				if (set == "DAR") {set = "DOM";} // Hopefully temporary, check back later, maybe erase
-
-				/*
-				if (set == "*") {
-					alert("Set unspecified for card '" + name + "'! For now, the API doesn't have a good way to search for cards without a set, so I'm gonna need you to specify one. Action aborted.");
-					return false;
-				}
-				*/
 			} catch(e) {
 				alert("Error parsing deck: " + e);
 				error_parsing_deck = true;
 				return false;
 			}
 
-			if (in_sideboard) {
-				set = "SIDEBOARD" + set;
-			}
-
-			amount_by_name[name.toLowerCase()] = amount;
-			amount_by_name_set[name.toLowerCase() + set.toLowerCase()] = amount;
-			found_cards[name.toLowerCase()] = false;
-
 			if (typeof requests[set] == "undefined") {
-				requests[set] = [[]];
+				requests[set] = [];
 			}
 
-			if (requests[set][0].length >= 25) { // the limit is 175 requests, but we're limiting ourselves to 25 to be safe
-				requests[set].unshift([]);
+			if ((requests[set].length == 0) ||
+				(in_sideboard && !in_sideboard_changed) || // new list if we've entered the sideboard
+				requests[set][0].names.length >= 100) { // the limit is 175 requests, but we're limiting ourselves to 100 to be safe
+				requests[set].unshift({
+					names: [],
+					amount_by_name: {},
+					in_sideboard: in_sideboard
+				});
 			}
 
-			requests[set][0].push(name);
+			if (in_sideboard) {in_sideboard_changed = true;}
+			requests[set][0].names.push(name);
+			requests[set][0].amount_by_name[name.toLowerCase()] = amount;
+			found_cards[name.toLowerCase()] = false;
 		});
 
 		if (error_parsing_deck) {return;} // abort
@@ -403,20 +405,18 @@ $(document).ready(function() {
 		var no_mid = [];
 
 		$.each(requests,function(set,arr) {
-			$.each(arr,function(idx,names) {
+			$.each(arr,function(idx,request) {
+				var names = request.names;
+				var amount_by_name = request.amount_by_name;
+				var in_sideboard = request.in_sideboard;
+
 				var params = {};
 
 				$.each(names,function(idx,name) {
 					names[idx] = "!\"" + name + "\""; // Prefix each name with "!" and add quotes " " which makes it an exact match
-				})
+				});
 
 				params.q = names.join(" or ");
-
-				var in_sideboard = false;
-				if (set.indexOf("SIDEBOARD") == 0) {
-					set = set.substr(9);
-					in_sideboard = true;
-				}
 
 				if (set.indexOf("*") == -1) {
 					params.q = "s:" + set + " (" + params.q + ")"; // Add set, and group all cards in brackets
@@ -433,25 +433,25 @@ $(document).ready(function() {
 				var x = $.get( url, function(data) {
 					$.each(data.data,function(idx,card) {
 						//if (found_cards[card.name] == true) {return;}
-						found_cards[card.name.toLowerCase()] = true;
+						var name = card.name.toLowerCase();
+						found_cards[name] = true;
 
 						if (card.multiverse_ids.length == 0) {
 							no_mid.push(card.name);
 						}
 
-						var amount = (amount_by_name_set[card.name.toLowerCase() + card.set] || amount_by_name[card.name.toLowerCase()]) || 0;
+						var amount = amount_by_name[name] || 0;
 
 						// checks for other card faces
 						if (amount == 0) {
 							if (typeof card.card_faces != "undefined") {
 								for(var i=0;i<card.card_faces.length;i++) {
 									let face = card.card_faces[i];
-									found_cards[face.name.toLowerCase()] = true;
+									let face_name = face.name.toLowerCase();
+									found_cards[face_name] = true;
 
-									if (typeof amount_by_name_set[face.name.toLowerCase() + face.set] != "undefined") {
-										amount = amount_by_name_set[face.name.toLowerCase() + face.set];
-									} else if (typeof amount_by_name[face.name.toLowerCase()] != "undefined") {
-										amount = amount_by_name[face.name.toLowerCase()];
+									if (typeof amount_by_name[face_name] != "undefined") {
+										amount = amount_by_name[face_name];
 									}
 								}
 							}
@@ -477,9 +477,9 @@ $(document).ready(function() {
 						}
 
 						if (no_mid.length > 0) {
-							alert( "Card(s) '" + no_mid.join("; ") + "' have no multiverse id! "+
-									"These cards cannot be encoded into the URL and will therefore not show up if you send the link to someone. "+
-									"It's possible the API hasn't been updated yet." );
+							alert( "Card(s) '" + no_mid.join("; ") + "' have no multiverse IDs!\n"+
+									"These cards cannot be encoded into the URL and will therefore not show up if you send the link to someone.\n"+
+									"Try specifying a different set for these cards. Some reprints don't have multiverseids. It's also possible the API hasn't been updated yet." );
 						}
 
 						displayCards(cards);
@@ -508,10 +508,10 @@ $(document).ready(function() {
 		// first split by sideboard
 		var split_sideboard = decompressed.split("s");
 
-		var amount_by_multiverseid = {};
 		
 		function readData(str) {
 			var requests = [[]];
+			var amount_by_multiverseid = {};
 
 			var split = str.split(",");
 			if (split.length == 0) {return;}
@@ -544,7 +544,7 @@ $(document).ready(function() {
 				}
 			});
 
-			return requests;
+			return {requests:requests,amount_by_multiverseid:amount_by_multiverseid};
 		}
 
 		var requests = readData(split_sideboard[0]);
@@ -558,7 +558,10 @@ $(document).ready(function() {
 		var num_requests = 0;
 		var fetched_cards = {};
 
-		function processRequests(req,is_sideboard) {
+		function processRequests(requests,is_sideboard) {
+			var req = requests.requests;
+			var amount_by_multiverseid = requests.amount_by_multiverseid;
+
 			$.each(req,function(idx,multiverseids) {
 				num_requests++;
 

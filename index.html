@@ -92,7 +92,19 @@
 						<div class="collapse show">
 							<div class="card-body">
 								<p>Paste the exported deck data from a source such as MTG Arena into the text box below and click Load.<br>
-									<small>(Currently only supports MTG Arena format)</small></p>
+									<small>(Currently only supports MTG Arena format) - (<a href='#' id='how-does-it-work'>How does it work?</a>)</small></p>
+								<div class='collapse' id="how-does-it-work-collapse">
+									<div class="center">
+										<div class='card'>
+											<div class='card-body'>
+												<p>This site is 100% clientside - meaning it all runs in your browser and does not have a server or backend of its own. For this reason, all of the deck data is stored inside the URL 'code' that is generated, and nowhere else.</p>
+												<p>The code parses your decklist and then queries the <a href="https://scryfall.com/">Scryfall API</a> to fetch card images and other information. Next, it does a little bit of ordering by card type and CMC cost, etc, before displaying the cards to you.</p>
+												<p>The entire source code is available on <a href="https://github.com/Divran/mtg-deck-showcaser">GitHub</a> if you are interested. If you find any bugs, please report them on GitHub as well. Thanks.</p>
+												<p><small>(Note that if you edit the options away from the defaults, they will be saved in your browser.)</small></p>
+											</div>
+										</div>
+									</div>
+								</div>
 								<textarea id="input" class="form-control"></textarea>
 							</div>
 						</div>
@@ -116,9 +128,14 @@
 			</div>
 		</div>
 
-		<!-- options menu -->
 		<script>
 			$(document).ready(function() {
+				// How does it work collapsible
+				$("#how-does-it-work").click(function() {
+					$("#how-does-it-work-collapse").collapse("toggle");
+				});
+
+				//options menu
 				var modal = $("#options-modal");
 				$(".options-menu-btn").click(function() {
 					modal.modal("show");

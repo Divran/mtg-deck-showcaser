@@ -372,7 +372,6 @@ $(document).ready(function() {
 			}
 		});
 		a.on("mouseleave",function() {
-			$("img",fs_im).attr("src","");
 			fs_im.hide();
 		});
 

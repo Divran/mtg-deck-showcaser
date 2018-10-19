@@ -19,6 +19,72 @@
 		<script src="js/lz-string.js"></script>
 	</head>
 	<body>
+		<div class="modal fade" id="options-modal" tabindex="-1" role="dialog">
+			<div class="modal-dialog" role="document">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title">Options</h5>
+						<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+							<span aria-hidden="true">&times;</span>
+						</button>
+					</div>
+					<table class="table">
+						<thead>
+							<col width="50%">
+							<col width="50%">
+						</thead>
+						<tr>
+							<td class="options-resolution" data-value="1">
+								<input type="checkbox">
+								<label>Standard resolution</label><br>
+								<small>Standard image resolution <strong>(default)</strong><br>(Changes will take effect on next deck load).</small>
+							</td>
+							<td class="options-resolution" data-value="0">
+								<input type="checkbox">
+								<label>Low resolution</label><br>
+								<small>Loads low resolution images instead. Images may be blurry and unreadable, but it will use much less bandwidth.</small>
+							</td>
+						</tr>
+						<tr>
+							<td class="options-auto-split" data-value="1">
+								<input type="checkbox">
+								<label>Do: Auto-split</label><br>
+								<small>Automatically detects when a column gets too tall, and splits it into two columns. Tries to do it cleverly so you don't end up with a column of only 1 or 2 cards <strong>(default)</strong></small>
+							</td>
+							<td class="options-auto-split" data-value="0">
+								<input type="checkbox">
+								<label>Don't: Auto-split</label><br>
+								<small>Keeps all categories as single columns, never splits them.<br>(Changes will take effect on next deck load).</small>
+							</td>
+						</tr>
+						<tr>
+							<td class="options-fullscreen-img" data-value="1">
+								<input type="checkbox">
+								<label>Do: fullscreen images</label><br>
+								<small>When you hover over an image, loads a high-resolution version of the image and displays it fullscreen instead.</small>
+							</td>
+							<td class="options-fullscreen-img" data-value="0">
+								<input type="checkbox">
+								<label>Don't: fullscreen images</label><br>
+								<small>Default behavior of simply moving the image to the top of the pile of cards on hover <strong>(default)</strong>.<br>(Changes will take effect immediately).</small>
+							</td>
+						</tr>
+					</table>
+					<div class="modal-footer">
+						<p>
+							These options are stored in 'localStorage' in your browser (pretty much the same as cookies).
+							Currently, <span id='options-amount-stored'></span> options are stored in your browser.
+							Click <a href='#' id='options-delete-stored'>here</a> to delete all stored options and reset them to default.
+						</p>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="fullscreen-img" style="display:none;">
+			<img />
+		</div>
+
 		<div class="container-fluid">
 			<div class="center">
 				<div class="width-limiter">
@@ -31,6 +97,9 @@
 							</div>
 						</div>
 						<div class="card-footer">
+							<div class="float-right">
+								<div class="btn btn-info btn-sm options-menu-btn">Options</div>
+							</div>
 							<div class="btn btn-primary load-deck-btn">Load deck</div>
 							<div class="btn btn-sm btn-primary open-input-btn" style="display:none;">Load another deck (or view decklist)</div>
 						</div>
@@ -47,6 +116,90 @@
 			</div>
 		</div>
 
+		<!-- options menu -->
+		<script>
+			$(document).ready(function() {
+				var modal = $("#options-modal");
+				$(".options-menu-btn").click(function() {
+					modal.modal("show");
+				});
+
+				var amount = $("#options-amount-stored",modal);
+				var del = $("#options-delete-stored",modal);
+
+				function updateCounter() {
+					amount.text(localStorage.length);
+				}
+
+				del.click(function() {
+					localStorage.clear();
+					updateCounter();
+					loadOptions();
+				});
+
+
+				var options = {
+					"resolution": "1", // 0=low, 1=normal (default: 1)
+					"auto-split": "1", // 0=no, 1=yes (default: 1)
+					"fullscreen-img": "0" // 0=no, 1=yes (default:0)
+				};
+
+				function loadOptions() {
+					$.each(options,function(key,def) {
+						// load default
+						var val = localStorage.getItem(key) || def;
+
+						// check current options
+						var elem = $(".options-" + key,modal);
+						elem.removeClass("table-success");
+						$("input",elem).attr("checked",false);
+
+						$.each(elem,function(_,e) {
+							e = $(e);
+							if (e.attr("data-value") == val) {
+								// check myself
+								$("input",e).attr("checked",true);
+								e.addClass("table-success");
+
+								// set option in showcaser
+								showcaserOption(key,val);
+							}
+						});
+
+						updateCounter();
+
+						// enable clicking
+						elem.off('click'); // remove old handler
+						elem.click(function() {
+							var val = $(this).attr("data-value");
+
+							// uncheck all others
+							elem.removeClass("table-success");
+							$("input",elem).attr("checked",false);
+
+							// check myself
+							$(this).addClass("table-success");
+							$("input",$(this)).attr("checked",true);
+
+							// save value
+							if (val == options[key]) {
+								localStorage.removeItem(key);
+							} else {
+								localStorage.setItem(key,val);
+							}
+
+							// update counter
+							updateCounter();
+
+							// set option in showcaser
+							showcaserOption(key,val);
+						});
+					});
+				}
+				loadOptions();
+			});
+		</script>
+
 		<div class="credits">
 			<small>
 				Made by Divran, September 2018<br>
@@ -54,6 +207,5 @@
 				Source: <a href='https://github.com/Divran/mtg-deck-showcaser'>https://github.com/Divran/mtg-deck-showcaser</a>
 			</small>
 		</div>
-		
 	</body>
 </html>

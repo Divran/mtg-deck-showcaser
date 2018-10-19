@@ -12,7 +12,7 @@ body {
 /* inputs */
 
 #input-card #input {
-	height:700px;
+	height:600px;
 }
 
 .btn-light {
@@ -93,7 +93,7 @@ body {
 }
 
 .mtg-card:hover img {
-	z-index:999999;
+	z-index:100;
 }
 
 .mtg-card img.secondary-card {
@@ -126,4 +126,45 @@ body {
     position:relative;
     max-width:100%;
     width:252px;
+}
+
+/* options */
+#options-modal table tr td {
+	cursor:pointer;
+}
+
+#options-modal table {
+	margin-bottom:0;
+}
+
+#options-modal table tr:last-child td {
+	border-bottom-right-radius:0.3rem;
+}
+
+#options-modal .modal-footer p {
+	margin-bottom:0;
+}
+
+/* fullscreen img */
+.fullscreen-img {
+	pointer-events:none;
+	top:0;
+	left:0;
+	width:100%;
+	height:100%;
+	background-color:rgba(0,0,0,0.8);
+	z-index:1000;
+	position:fixed;
+}
+
+.fullscreen-img img {
+	pointer-events:none;
+	position:fixed;
+	max-width:calc(100% - 32px);
+	max-height:calc(100% - 31px);
+	top:50%;
+	left:50%;
+	transform:translate(-50%, -50%);
+	box-shadow:0px 0px 28px 24px white;
+	z-index:1000;
 }

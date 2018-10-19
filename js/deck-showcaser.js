@@ -8,6 +8,16 @@ $(document).ready(function() {
 		input.removeClass("loaded");
 	});
 
+	var options = {
+		"resolution": "1", // 0=low, 1=normal (default: 1)
+		"auto-split": "1", // 0=no, 1=yes (default: 1)
+		"fullscreen-img": "0" // 0=no, 1=yes (default:0)
+	};
+
+	window.showcaserOption = function(k,v) {
+		options[k] = v;
+	}
+
 	function resizeFakeCards() {
 		$(".fake-card").each(function() {
 			var that = $(this);
@@ -171,7 +181,7 @@ $(document).ready(function() {
 					num_child++;
 				} else {
 					for(var i=0;i<amount;i++) {
-						parent.append(card.a.clone());
+						parent.append(card.a.clone(true));
 						num_child++;
 					}
 				}
@@ -186,38 +196,51 @@ $(document).ready(function() {
 
 		// Automatically split columns up if they're too tall
 		// Also checks if columns are empty and hides them
-		var split_count = all_amount / 5; // if a column is this large, attempt split
-		var min_split_count = 6; // only split if the resulting column has at least this many cards
-		$.each(columns,function(card_category,pnl) {
-			var children = pnl.children();
-			var child_count = children.length;
+		if (options["auto-split"] == "1") {
+			var split_count = all_amount / 5; // if a column is this large, attempt split
+			var min_split_count = 6; // only split if the resulting column has at least this many cards
+			$.each(columns,function(card_category,pnl) {
+				var children = pnl.children();
+				var child_count = children.length;
 
-			if (child_count == 0) {
-				pnl.parent().hide();
-				return;
-			}
+				if (child_count == 0) {
+					pnl.parent().hide();
+					return;
+				}
 
-			if (child_count > split_count) {
-				var new_pnl = pnl.parent().clone();
-				$(".mtg-list",new_pnl).empty();
-				var move_children = [];
-				var previous_url = "";
-				for(var i=0;i<child_count;i++) {
-					if (i>Math.floor(child_count/2) && $(children[i]).attr("href") != previous_url) {
-						move_children.push(children[i]);
-					} else {
-						previous_url = $(children[i]).attr("href");
+				if (child_count > split_count) {
+					var new_pnl = pnl.parent().clone();
+					$(".mtg-list",new_pnl).empty();
+					var move_children = [];
+					var previous_url = "";
+					for(var i=0;i<child_count;i++) {
+						if (i>Math.floor(child_count/2) && $(children[i]).attr("href") != previous_url) {
+							move_children.push(children[i]);
+						} else {
+							previous_url = $(children[i]).attr("href");
+						}
+					}
+
+					if (move_children.length > min_split_count) {
+						$(move_children).detach().appendTo($(".mtg-list",new_pnl));
+						new_pnl.insertAfter(pnl.parent());
+						$(".mtg-list-amount",pnl.parent()).text(child_count - move_children.length);
+						$(".mtg-list-amount",new_pnl).text(move_children.length);
 					}
 				}
+			});
+		} else {
+			// splitting is disabled, so just check child count
+			$.each(columns,function(card_category,pnl) {
+				var children = pnl.children();
+				var child_count = children.length;
 
-				if (move_children.length > min_split_count) {
-					$(move_children).detach().appendTo($(".mtg-list",new_pnl));
-					new_pnl.insertAfter(pnl.parent());
-					$(".mtg-list-amount",pnl.parent()).text(child_count - move_children.length);
-					$(".mtg-list-amount",new_pnl).text(move_children.length);
+				if (child_count == 0) {
+					pnl.parent().hide();
+					return;
 				}
-			}
-		});
+			});
+		}
 
 		result.prepend("<strong>Nr of cards: " + all_amount + "</strong><br>");
 
@@ -249,32 +272,41 @@ $(document).ready(function() {
 
 	// returns {image:<string>,border_class:<string>}
 	function getCardImage(card) {
+		var res = (options.resolution == "1") // true=normal res, false=low res
+		var normal_img = (res ? "border_crop" : "small");
+		var backup_img = (res ? "normal" : "small");
+
 		var image = "";
+		var hires_image = "";
 		var fix_border_class = "";
 		var multi_images = {split:true, flip:true, transform:true, double_faced_token:true};
 		if (multi_images[card.layout]) {
 			if (card.card_faces[0].image_uris) {
-				if (card.card_faces[0].image_uris.border_crop) {
-					image = card.card_faces[0].image_uris.border_crop;
-					fix_border_class = "fix-border";
+				hires_image = card.card_faces[0].large;
+
+				if (card.card_faces[0].image_uris[normal_img]) {
+					image = card.card_faces[0].image_uris[normal_img];
+					fix_border_class = (normal_img=="border_crop" ? "fix-border" : "");
 				} else {
-					image = card.card_faces[0].image_uris.png;
+					image = card.card_faces[0].image_uris[backup_img];
 				}
 			}
 		}
 
 		if (image == "") {
 			if (card.image_uris) {
-				if (card.image_uris.border_crop) {
-					image = card.image_uris.border_crop;
-					fix_border_class = "fix-border";
+				hires_image = card.image_uris.large;
+
+				if (card.image_uris[normal_img]) {
+					image = card.image_uris[normal_img];
+					fix_border_class = (normal_img=="border_crop" ? "fix-border" : "");
 				} else {
-					image = card.image_uris.png;
+					image = card.image_uris[backup_img];
 				}
 			}
 		}
 
-		return {image:image,border_class:fix_border_class};
+		return {image:image,border_class:fix_border_class,hires_image:hires_image};
 	}
 
 	function processCard(card,cards,amount,in_sideboard) {
@@ -282,6 +314,7 @@ $(document).ready(function() {
 		var type = card.type_line;
 		var image = getCardImage(card);
 		var fix_border_class = image.border_class;
+		var hires_image = image.hires_image;
 		image = image.image;
 
 		if (typeof image == "undefined") {
@@ -330,6 +363,19 @@ $(document).ready(function() {
 			a.append(img);
 		}
 
+		// handle hires image on hover
+		var fs_im = $(".fullscreen-img");
+		a.on("mouseenter",function() {
+			if (options["fullscreen-img"] == "1") {
+				$("img",fs_im).attr("src",hires_image);
+				fs_im.show();
+			}
+		});
+		a.on("mouseleave",function() {
+			$("img",fs_im).attr("src","");
+			fs_im.hide();
+		});
+
 		if (typeof cards[card_category] == "undefined") {cards[card_category] = [];}
 		cards[card_category].push({
 			name: name,
@@ -362,7 +408,7 @@ $(document).ready(function() {
 			}
 
 			try {
-				var re = /^(\d*) (.*?) ?(\((.*?)\))? ?(\d*)?$/i;
+				var re = /^(\d*) (.*?) ?(\((.*?)\))? ?(\w*)?$/i;
 				var match = line.match(re);
 
 				var amount = parseInt(match[1]);

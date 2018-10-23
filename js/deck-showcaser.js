@@ -3,6 +3,10 @@ $(document).ready(function() {
 	var btn = $( "#input-card .load-deck-btn" );
 	var input = $( "#input-card #input" );
 	var result = $( "#result-card #result-body" );
+
+	$("#result-card").hide();
+	$("#loading-notification").hide();
+
 	input.focus(function() {
 		input.select();
 		input.removeClass("loaded");
@@ -266,6 +270,8 @@ $(document).ready(function() {
 		});
 
 		$("#result-card .collapse").collapse("show");
+		$("#result-card").show();
+		$("#loading-notification").hide();
 		resizeFakeCards();
 		setTimeout(function() {resizeFakeCards();},200);
 	}
@@ -416,7 +422,7 @@ $(document).ready(function() {
 				var num = match[4];
 
 				if (!set) {
-					name += " " + num;
+					name = (name + " " + num).trim()
 					set = "*";
 				}
 
@@ -450,10 +456,12 @@ $(document).ready(function() {
 		if (error_parsing_deck) {return;} // abort
 
 		hideInput();
+		$("#loading-notification").show();
 
 		var cards = {};
 		var num_requests = 0;
 		var no_mid = [];
+		var warned_about_fail = false;
 
 		function processRequests(r, in_sideboard) {
 			$.each(r,function(set,arr) {
@@ -536,7 +544,14 @@ $(document).ready(function() {
 							displayCards(cards);
 							buildShareURL(cards);
 						}
-					})
+					});
+
+					x.fail(function() {
+						if (!warned_about_fail) {
+							warned_about_fail = true;
+							alert("Unable to contact scryfall's API. Maybe it's down? You could go check https://downforeveryoneorjustme.com/ to be sure.");
+						}
+					});
 				});
 			});
 		}
@@ -563,7 +578,6 @@ $(document).ready(function() {
 		// first split by sideboard
 		var split_sideboard = decompressed.split("s");
 
-		
 		function readData(str) {
 			var requests = [[]];
 			var amount_by_multiverseid = {};
@@ -609,9 +623,11 @@ $(document).ready(function() {
 		}
 
 		hideInput();
+		$("#loading-notification").show();
 		var cards = {};
 		var num_requests = 0;
 		var fetched_cards = {};
+		var warned_about_fail = false;
 
 		function processRequests(requests,is_sideboard) {
 			var req = requests.requests;
@@ -661,7 +677,14 @@ $(document).ready(function() {
 						displayCards(cards);
 						buildCardInputBox(cards);
 					}
-				})
+				});
+
+				x.fail(function() {
+					if (!warned_about_fail) {
+						warned_about_fail = true;
+						alert("Unable to contact scryfall's API. Maybe it's down? You could go check https://downforeveryoneorjustme.com/ to be sure.");
+					}
+				});
 			});
 		}
 

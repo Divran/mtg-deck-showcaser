@@ -413,18 +413,13 @@ $(document).ready(function() {
 			}
 
 			try {
-				var re = /^(\d*) (.*?) ?(?:\((.*)\))? ?(\w*?)$/i;
+				var re = /^(\d*) (.*?) ?(?:\((.*)\))? ?(?:(?<=.*\)\s?)(\w*?))?$/i;
 				var match = line.match(re);
 
 				var amount = parseInt(match[1]);
 				var name = match[2];
-				var set = match[3];
-				var num = match[4];
-
-				if (!set) {
-					name = (name + " " + num).trim()
-					set = "*";
-				}
+				var set = match[3] || "*";
+				// var num = match[4]; // isn't used
 
 				if (set == "DAR") {set = "DOM";} // Hopefully temporary, check back later, maybe erase
 			} catch(e) {

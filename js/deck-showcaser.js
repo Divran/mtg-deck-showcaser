@@ -318,10 +318,10 @@ $(document).ready(function() {
 	function processCard(card,cards,amount,in_sideboard) {
 		var name = card.name;
 		var type = card.type_line;
-		var image = getCardImage(card);
-		var fix_border_class = image.border_class;
-		var hires_image = image.hires_image;
-		image = image.image;
+		var primary_image = getCardImage(card);
+		var fix_border_class = primary_image.border_class;
+		var hires_image = [];
+		var image = primary_image.image;
 
 		if (typeof image == "undefined") {
 			alert("Warning: Card '" + card.name + "' doesn't have an image!");
@@ -362,18 +362,42 @@ $(document).ready(function() {
 				let img_2 = $("<img>").attr("src",m.image).addClass(m.border_class);
 				if (i>0) {img_2.addClass("secondary-card");}
 				a.append(img_2);
+
+				hires_image.push(m.hires_image);
 			}
 		} else { // just one face, load it
 			var img = $("<img>").attr("src",image).addClass(fix_border_class);
 			img.hide();
 			a.append(img);
+
+			hires_image = [primary_image.hires_image];
 		}
 
 		// handle hires image on hover
 		var fs_im = $(".fullscreen-img");
+		var fs_cont = $(".fullscreen-container",fs_im);
 		a.on("mouseenter",function() {
 			if (options["fullscreen-img"] == "1") {
-				$("img",fs_im).attr("src",hires_image);
+				var c = fs_im.children();
+				$(".fs-img",fs_im).hide(); // hide all <img> elements first
+				$.each(hires_image,function(idx,elem) { // step through all faces of card and show images
+					if (c[idx]) {
+						// set src and show
+						$("img",c[idx]).attr("src",elem);
+						$(c[idx]).show();
+					} else {
+						// if <img> element doesn't exist yet, create it
+						var e = $("<div class='fs-img'><img></div>");
+						$("img",e).attr("src",elem);
+						e.appendTo(fs_im); 
+					}
+				});
+
+				// set image width by number of images
+				//var percent = Math.min(90,(1/hires_image.length)*100);
+				//$("img",fs_im).css("max-width",percent+"%");
+
+				// show fullscreen images
 				fs_im.show();
 			}
 		});

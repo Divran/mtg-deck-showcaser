@@ -358,12 +358,14 @@ $(document).ready(function() {
 					m.image = image;
 					m.border_class = fix_border_class;
 					len = -1; // abort after this
+					hires_image = [primary_image.hires_image];
+				} else {
+					hires_image.push(m.hires_image);
 				}
+
 				let img_2 = $("<img>").attr("src",m.image).addClass(m.border_class);
 				if (i>0) {img_2.addClass("secondary-card");}
 				a.append(img_2);
-
-				hires_image.push(m.hires_image);
 			}
 		} else { // just one face, load it
 			var img = $("<img>").attr("src",image).addClass(fix_border_class);

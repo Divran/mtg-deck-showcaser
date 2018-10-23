@@ -407,12 +407,18 @@ $(document).ready(function() {
 			}
 
 			try {
-				var re = /^(\d*) (.*?) ?(\((.*?)\))? ?(\w*)?$/i;
+				var re = /^(\d*) (.*?) ?(?:\((.*)\))? ?(\w*?)$/i;
 				var match = line.match(re);
 
 				var amount = parseInt(match[1]);
 				var name = match[2];
-				var set = match[4] || "*";
+				var set = match[3];
+				var num = match[4];
+
+				if (!set) {
+					name += " " + num;
+					set = "*";
+				}
 
 				if (set == "DAR") {set = "DOM";} // Hopefully temporary, check back later, maybe erase
 			} catch(e) {
@@ -669,13 +675,13 @@ $(document).ready(function() {
 	function hideInput() {
 		btn.hide();
 		btn_other_deck.show();
-		$(".collapse",input_card).collapse("hide");
+		$(".collapse",input_card).not("#how-does-it-work-collapse").collapse("hide");
 	}
 
 	function showInput() {
 		btn.show();
 		btn_other_deck.hide();
-		$(".collapse",input_card).collapse("show");
+		$(".collapse",input_card).not("#how-does-it-work-collapse").collapse("show");
 	}
 
 	var old_input_text = "";

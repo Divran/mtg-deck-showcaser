@@ -181,13 +181,13 @@
 						// check current options
 						var elem = $(".options-" + key,modal);
 						elem.removeClass("table-success");
-						$("input",elem).attr("checked",false);
+						$("input",elem).prop("checked",false);
 
 						$.each(elem,function(_,e) {
 							e = $(e);
 							if (e.attr("data-value") == val) {
 								// check myself
-								$("input",e).attr("checked",true);
+								$("input",e).prop("checked",true);
 								e.addClass("table-success");
 
 								// set option in showcaser
@@ -204,11 +204,11 @@
 
 							// uncheck all others
 							elem.removeClass("table-success");
-							$("input",elem).attr("checked",false);
+							$("input",elem).prop("checked",false);
 
 							// check myself
 							$(this).addClass("table-success");
-							$("input",$(this)).attr("checked",true);
+							$("input",$(this)).prop("checked",true);
 
 							// save value
 							if (val == options[key]) {

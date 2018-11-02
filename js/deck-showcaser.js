@@ -181,11 +181,11 @@ $(document).ready(function() {
 
 				if (amount > 4) {
 					parent.append(card.a);
-					card.a.append($("<div class='card-counter'>" + amount + "x</div>").hide());
+					card.a.append($("<div class='card-counter'>" + amount + "x</div>").hide()).attr("data-card-amount",amount);
 					num_child++;
 				} else {
 					for(var i=0;i<amount;i++) {
-						parent.append(card.a.clone(true));
+						parent.append(card.a.clone(true).attr("data-card-amount",1));
 						num_child++;
 					}
 				}
@@ -216,20 +216,24 @@ $(document).ready(function() {
 					var new_pnl = pnl.parent().clone();
 					$(".mtg-list",new_pnl).empty();
 					var move_children = [];
+					var actual_amount = 0;
 					var previous_url = "";
 					for(var i=0;i<child_count;i++) {
-						if (i>Math.floor(child_count/2) && $(children[i]).attr("href") != previous_url) {
-							move_children.push(children[i]);
+						let child = $(children[i]);
+						if (i>Math.floor(child_count/2) && child.attr("href") != previous_url) {
+							move_children.push(child[0]);
+							actual_amount += parseInt(child.attr("data-card-amount"));
 						} else {
-							previous_url = $(children[i]).attr("href");
+							previous_url = child.attr("href");
 						}
 					}
 
 					if (move_children.length > min_split_count) {
 						$(move_children).detach().appendTo($(".mtg-list",new_pnl));
 						new_pnl.insertAfter(pnl.parent());
-						$(".mtg-list-amount",pnl.parent()).text(child_count - move_children.length);
-						$(".mtg-list-amount",new_pnl).text(move_children.length);
+						var temp = $(".mtg-list-amount",pnl.parent());
+						temp.text(parseInt(temp.text()) - actual_amount);
+						$(".mtg-list-amount",new_pnl).text(actual_amount);
 					}
 				}
 			});

@@ -143,8 +143,10 @@
 		<script>
 			$(document).ready(function() {
 				// How does it work collapsible
-				$("#how-does-it-work").click(function() {
+				$("#how-does-it-work").click(function(e) {
 					$("#how-does-it-work-collapse").collapse("toggle");
+					e.preventDefault();
+					return true;
 				});
 
 				//options menu
@@ -160,10 +162,12 @@
 					amount.text(localStorage.length);
 				}
 
-				del.click(function() {
+				del.click(function(e) {
 					localStorage.clear();
 					updateCounter();
 					loadOptions();
+					e.preventDefault();
+					return true;
 				});
 
 

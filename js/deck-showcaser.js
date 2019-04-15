@@ -455,6 +455,14 @@ $(document).ready(function() {
 				}
 				var set = match[3] || "*";
 
+				// if the card is a basic land, and the set is undefined, change the set to UST because they look cool
+				if (set == "*") {
+					var basic_lands = {plains:true, island:true, swamp:true, mountain:true,forest:true};
+					if (basic_lands[name.trim().toLowerCase()] == true) {
+						set = "UST";
+					}
+				}
+
 				/*
 					note! this new regex doesn't work in firefox
 					keeping it here in case it becomes available for use in the future
@@ -481,7 +489,8 @@ $(document).ready(function() {
 			}
 
 			if ((r[set].length == 0) ||
-				r[set][0].names.length >= 100) { // the limit is 175 requests, but we're limiting ourselves to 100 to be safe
+				r[set][0].names.length >= 100 || // the limit is 175 requests, but we're limiting ourselves to 100 to be safe
+				r[set][0].names.join("").length + r[set][0].names.length*7 > 800) { // also limiting the url length to about 800 characters (nr of spaces=number of characters added below)
 				r[set].unshift({
 					names: [],
 					amount_by_name: {}

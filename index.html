@@ -81,6 +81,16 @@
 								<small>Default behavior of simply moving the image to the top of the pile of cards on hover <strong>(default)</strong>.<br>(Changes will take effect immediately).</small>
 							</td>
 						</tr>
+						<tr>
+							<td class="options-darkmode" data-value="1">
+								<input type="checkbox">
+								<label>Do: Dark mode</label>
+							</td>
+							<td class="options-darkmode" data-value="0">
+								<input type="checkbox">
+								<label>Don't: Dark mode</label>
+							</td>
+						</tr>
 					</table>
 					<div class="modal-footer">
 						<p>
@@ -174,8 +184,26 @@
 				var options = {
 					"resolution": "1", // 0=low, 1=normal (default: 1)
 					"auto-split": "1", // 0=no, 1=yes (default: 1)
-					"fullscreen-img": "0" // 0=no, 1=yes (default:0)
+					"fullscreen-img": "0", // 0=no, 1=yes (default:0)
+					"darkmode": "0" //0=no, 1=yes (default:0)
 				};
+
+				// options handled here instead of in showcaser code
+				var my_options = {
+					"darkmode": function(val) {
+						if (val==1) {
+							$("body").addClass("bg-dark").addClass("text-white");
+							$(".card").addClass("bg-dark");
+							$("input, textarea").addClass("form-control-dark");
+							$("table").addClass("table-dark");
+						} else {
+							$("body").removeClass("bg-dark").removeClass("text-white");
+							$(".card").removeClass("bg-dark");
+							$("input, textarea").removeClass("form-control-dark");
+							$("table").removeClass("table-dark");
+						}
+					}
+				}
 
 				function loadOptions() {
 					$.each(options,function(key,def) {
@@ -194,8 +222,12 @@
 								$("input",e).prop("checked",true);
 								e.addClass("table-success");
 
-								// set option in showcaser
-								showcaserOption(key,val);
+								if (my_options[key]) {
+									my_options[key](val);
+								} else {
+									// set option in showcaser
+									showcaserOption(key,val);
+								}
 							}
 						});
 
@@ -225,7 +257,12 @@
 							updateCounter();
 
 							// set option in showcaser
-							showcaserOption(key,val);
+							if (my_options[key]) {
+								my_options[key](val);
+							} else {
+								// set option in showcaser
+								showcaserOption(key,val);
+							}
 						});
 					});
 				}

@@ -129,16 +129,12 @@ body {
 }
 
 /* options */
-#options-modal table tr td {
+#options-modal table tr td, #optionms-modal table tr td * {
 	cursor:pointer;
 }
 
 #options-modal table {
 	margin-bottom:0;
-}
-
-#options-modal table tr:last-child td {
-	border-bottom-right-radius:0.3rem;
 }
 
 #options-modal .modal-footer p {
@@ -195,4 +191,35 @@ body {
 
 #how-does-it-work-collapse p:last-child {
 	margin-bottom:0;
+}
+
+/* dark mode */
+
+body.bg-dark {
+	background-color:#4c5156!important;
+} 
+
+.form-control-dark {
+	color:white!important;
+	background-color:#4c5156!important;
+	border-color:rgba(0,0,0,0.125);
+}
+
+.form-control-dark::selection {
+	color:white;
+	background-color:rgba(0,0,0,0.3);
+}
+
+body.bg-dark .modal-dialog .modal-content {
+	background-color:#343a40!important;
+	color:white;
+}
+
+body.bg-dark .modal-dialog .modal-content table tr td.table-success {
+	color:#212529;
+}
+
+body.bg-dark .modal-dialog .modal-content .modal-header,
+body.bg-dark .modal-dialog .modal-content .modal-footer {
+	border-color:#32383e;
 }

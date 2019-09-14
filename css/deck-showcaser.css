@@ -129,7 +129,7 @@ body {
 }
 
 /* options */
-#options-modal table tr td, #optionms-modal table tr td * {
+#options-modal table tr td, #options-modal table tr td * {
 	cursor:pointer;
 }
 

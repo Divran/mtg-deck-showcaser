@@ -460,8 +460,7 @@ $(document).ready(function() {
 					]),
 					eur: roundPrice(card.prices.eur * card.amount) + "€",
 					usd: roundPrice(card.prices.usd * card.amount) + "$",
-					expensive: card.prices.usd > 4,
-					amount: card.amount
+					card: card
 				});
 
 				if (card_category == "lands") {
@@ -548,12 +547,21 @@ $(document).ready(function() {
 		}
 
 		// Deck price
+		pricelist.sort(function(a,b) {
+			var l = a.card.prices.usd * a.card.amount;
+			var r = b.card.prices.usd * b.card.amount;
+			if (l == r) {
+				return a.card.name.localeCompare(b.card.name)
+			}
+
+			return l < r ? 1 : -1;
+		})
 		col3.append("<center><string>Deck Price</strong></center>");
 		var t = $("<table class='table table-striped'>");
 		t.append("<thead><tr><th style='width:99%'>Name</th><th>Euro</th><th>USD</th></tr></thead>");
 		var tb = $("<tbody>").appendTo(t);
 		col3.append(t);
-		var nr_not_most_expensive = 0;
+		var hidden_cards = 0;
 		for(let i=0;i<pricelist.length;i++) {
 			let tr = $("<tr>").append([
 				$("<td>").css("text-align","left").append(pricelist[i].name),
@@ -562,12 +570,12 @@ $(document).ready(function() {
 			]);
 			tb.append(tr);
 
-			if (pricelist[i].expensive) {
-				tr.addClass("more-expensive");
+			if (i < 10) {
+				tr.addClass("show-more");
 			} else {
-				tr.addClass("less-expensive");
+				tr.addClass("show-less");
 				tr.hide();
-				nr_not_most_expensive+=pricelist[i].amount;
+				hidden_cards+=pricelist[i].card.amount;
 			}
 		}
 		var togglebtn = $("<div class='btn btn-primary'>").text("Show more").css("margin-left","8px");
@@ -575,16 +583,14 @@ $(document).ready(function() {
 		togglebtn.click(function() {
 			tgl = !tgl;
 			if (tgl) {
-				$("tr.less-expensive",tb).show();
-				$("tr.more-expensive",tb).hide();
+				$("tr.show-less",tb).show();
 				togglebtn.text("Show less");
 			} else {
-				$("tr.less-expensive",tb).hide();
-				$("tr.more-expensive",tb).show();
+				$("tr.show-less",tb).hide();
 				togglebtn.text("Show more");
 			}
 		});
-		tb.append($("<tr>").append($("<td colspan='3'>").append(["Plus " + nr_not_most_expensive + " more < 4$ cards",togglebtn])));
+		tb.append($("<tr>").append($("<td colspan='3'>").append(["+" + hidden_cards + " cards",togglebtn])));
 		tb.append($("<tr>").append([
 			$("<th>").css("text-align","right").text("Sum:"),
 			$("<td>").text(roundPrice(total_price.eur) + "€"),

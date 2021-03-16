@@ -604,9 +604,11 @@ $(document).ready(function() {
 			if (tgl) {
 				$("tr.show-less",tb).show();
 				togglebtn.text("Show less");
+				showmore_text.text("");
 			} else {
 				$("tr.show-less",tb).hide();
 				togglebtn.text("Show more");
+				showmore_text.text("+"+hidden_cards+" cards");
 			}
 		});
 		tb.append($("<tr>").append([
@@ -614,7 +616,8 @@ $(document).ready(function() {
 			$("<td>").text(roundPrice(total_price.eur) + "€"),
 			$("<td>").text(roundPrice(total_price.usd) + "$")
 		]));
-		tb.append($("<tr>").append($("<td colspan='3'>").append(["+" + hidden_cards + " cards",togglebtn])));
+		var showmore_text = $("<span>").text("+"+hidden_cards+" cards");
+		tb.append($("<tr>").append($("<td colspan='3'>").append([showmore_text,togglebtn])));
 	}
 
 	function processCard(card,cards,amount,in_sideboard) {

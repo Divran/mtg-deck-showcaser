@@ -540,10 +540,29 @@ $(document).ready(function() {
 		});
 		for(let i=0;i<typelists.length;i++) {
 			let item = typelists[i];
-			col2.append($("<div class='typelist-item'>").text(item.name).append($("<div class='typelist-item-right'>").text(item.amount)));
+			let d = $("<div class='typelist-item link-pointer'>").append([
+				$("<span>").text("[+] " + item.name),
+				$("<div class='typelist-item-right'>").text(item.amount)
+			]);
+			col2.append(d);
+			let collapse = $("<div class='collapse'>");
+			let collapse_c = $("<div class='card card-body typelist-item-card'>");
+			var has_items = false;
 			$.each(item.subtypes,function(idx,v) {
-				col2.append($("<div class='typelist-item typelist-item-subtype'>").text(idx).append($("<div class='typelist-item-right'>").text(v)));
+				has_items = true;
+				collapse_c.append($("<div class='typelist-item typelist-item-subtype'>").text(idx).append($("<div class='typelist-item-right'>").text(v)));
 			});
+			if (!has_items) {
+				collapse.remove();
+				collapse_c.remove();
+				$("span",d).text(item.name);
+				d.removeClass("link-pointer");
+			} else {
+				col2.append(collapse.append(collapse_c));
+				d.click(function() {collapse.collapse("toggle");});
+				collapse.on("show.bs.collapse",function() {$("span",d).text("[-] "+item.name);});
+				collapse.on("hide.bs.collapse",function() {$("span",d).text("[+] "+item.name);});
+			}
 		}
 
 		// Deck price
@@ -590,12 +609,12 @@ $(document).ready(function() {
 				togglebtn.text("Show more");
 			}
 		});
-		tb.append($("<tr>").append($("<td colspan='3'>").append(["+" + hidden_cards + " cards",togglebtn])));
 		tb.append($("<tr>").append([
 			$("<th>").css("text-align","right").text("Sum:"),
 			$("<td>").text(roundPrice(total_price.eur) + "€"),
 			$("<td>").text(roundPrice(total_price.usd) + "$")
 		]));
+		tb.append($("<tr>").append($("<td colspan='3'>").append(["+" + hidden_cards + " cards",togglebtn])));
 	}
 
 	function processCard(card,cards,amount,in_sideboard) {

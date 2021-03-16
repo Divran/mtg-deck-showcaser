@@ -3,9 +3,11 @@ $(document).ready(function() {
 	var btn = $( "#input-card .load-deck-btn" );
 	var input = $( "#input-card #input" );
 	var result = $( "#result-card #result-body" );
+	var statistics = $("#result-card #statistics-body");
 
 	$("#result-card").hide();
 	$("#loading-notification").hide();
+	statistics.collapse("hide");
 
 	input.focus(function() {
 		input.select();
@@ -34,6 +36,8 @@ $(document).ready(function() {
 	// Clears all visible cards, resets the columns, and returns them
 	function resetResults() {
 		result.empty();
+		statistics.empty();
+		statistics.collapse("hide");
 		var row = $("<div class='mtg-row'></div>");
 		var creatures = $("<div class='mtg-col'><strong>Creatures</strong><div class='mtg-list'></div></div>");
 		var noncreatures = $("<div class='mtg-col'><strong>Non-creatures</strong><div class='mtg-list'></div></div>");
@@ -250,7 +254,23 @@ $(document).ready(function() {
 			});
 		}
 
-		result.prepend("<strong>Nr of cards: " + all_amount + "</strong><br>");
+		var statistics_btn = $("<div class='btn btn-primary'>Deck statistics</div>");
+		statistics_btn.click(function() {statistics.parent().collapse("toggle");});
+		var totalnr = $("<div>").text("Nr of cards: " + all_amount);
+		totalnr.css({
+			padding:"6px",
+			border:"1px solid rgba(0,0,0,0.125)",
+			borderRadius:"0.25rem",
+			display:"inline-block",
+			marginRight:"15px",
+			verticalAlign:"middle"
+		});
+		displayStatistics(cards);
+		result.prepend([
+			totalnr,
+			statistics_btn,
+			"<br>"
+		]);
 
 		function showImg(that) {
 			$(".card-counter",that.parent()).show();
@@ -273,7 +293,7 @@ $(document).ready(function() {
 			}
 		});
 
-		$("#result-card .collapse").collapse("show");
+		result.parent().collapse("show");
 		$("#result-card").show();
 		$("#loading-notification").hide();
 		resizeFakeCards();
@@ -317,6 +337,259 @@ $(document).ready(function() {
 		}
 
 		return {image:image,border_class:fix_border_class,hires_image:hires_image};
+	}
+
+	var symbol_colors = {
+		"{W}": scryfall_symbology["{W}"],
+		"{U}": scryfall_symbology["{U}"],
+		"{B}": scryfall_symbology["{B}"],
+		"{R}": scryfall_symbology["{R}"],
+		"{G}": scryfall_symbology["{G}"],
+		"{S}": scryfall_symbology["{S}"],
+		"multicolored": {svg_uri: "multicolored.png"}, // custom icon for multicolored
+		"lands": {svg_uri: "lands.png"} // custom icon for lands
+	};
+
+	function displayStatistics(cards) {
+		var col1 = $("<div class='col-4'>");
+		var col2 = $("<div class='col-3'>");
+		var col3 = $("<div class='col-5'>");
+		var row = $("<div class='row'>");
+		statistics.append(row.append([col1,col2,col3]));
+
+		// Mana curve
+		col1.append("<center><strong>Mana curve</strong></center>");
+		var ch = $("<canvas style='width:100%; height:200px; max-width:400px;'>");
+		col1.append(ch);
+
+		function roundPrice(p) {return Math.floor(p*10000+0.5)/10000;}
+
+		var data = {creatures:[0,0,0,0,0,0],noncreatures:[0,0,0,0,0,0]};
+		var manadist = {};
+		var typelist = {};
+		var pricelist = [];
+		var total_price = {usd:0,eur:0};
+		function parseManadist(card) {
+			var m = card.mana_cost.match(/\{.+?\}/g);
+			var already_added = {};
+			var multicolored = false;
+
+			for(let i=0;i<m.length;i++) {
+				let cost = m[i];
+
+				if (typeof scryfall_symbology[cost]) {
+					let symbol = scryfall_symbology[cost];
+					if (symbol.colors) {
+						for(let x=0;x<symbol.colors.length;x++) {
+							let c = "{"+symbol.colors[x]+"}";
+							if (typeof already_added[c] == "boolean") {continue;}
+
+							manadist[c] = (manadist[c] || 0) + card.amount;
+							already_added[c] = true;
+
+							if (multicolored) {
+								manadist["multicolored"] = (manadist["multicolored"] || 0) + card.amount;
+							}
+							multicolored = true;
+						}
+					}
+				}
+			}
+		}
+
+
+		function parseSubtypes(card) {
+			function parseLine(line) {
+				var type = false;
+				var subtypes = false;
+				if (line.indexOf("—") != -1) {
+					var m = line.match(/^(.+) — (.+)$/);
+					type = m[1];
+					subtypes = m[2];
+				} else {
+					type = line;
+				}
+
+
+				if (type != false) {
+					type = type.replace("Legendary ",""); // We don't care about legendary here
+					type = type.replace("Basic Land","Land"); // We don't care about basic  here
+					
+					var expl = type.split(" ");
+					for(let i=0;i<expl.length;i++) {
+						let t = expl[i];
+						if (typeof typelist[t] == "undefined") {typelist[t] = {amount:0,subtypes:{}};}
+						typelist[t].amount+=card.amount;
+					}
+
+					// assume that the last type in the list is the most relevant one (such as in 'Enchantment Creature')
+					type = expl.pop();
+				}
+				
+				if (subtypes != false) {
+					var tp = typelist[type];
+					var expl = subtypes.split(" ");
+					for(let i=0;i<expl.length;i++) {
+						let subtype = expl[i];
+						tp.subtypes[subtype] = (tp.subtypes[subtype] || 0) + card.amount;
+					}
+				}
+			}
+
+			if (card.type_line.indexOf("//") != -1) {
+				var m = card.type_line.match(/^(.+) \/\/ (.+)$/);
+				parseLine(m[1]);
+				parseLine(m[2]);
+			} else {
+				parseLine(card.type_line);
+			}
+		}
+
+		var total_nonland = 0;
+		$.each(cards,function(card_category,_cards) {
+			$.each(_cards,function(idx,card) {
+				// Typelist
+				parseSubtypes(card);
+
+				total_price.eur += roundPrice(card.prices.eur * card.amount);
+				total_price.usd += roundPrice(card.prices.usd * card.amount);
+				pricelist.push({
+					name: $("<div>").append([
+						$("<a>").attr("href",card.url).text(card.name),
+						" " + (card.amount > 1 ? "x"+card.amount : "")
+					]),
+					eur: roundPrice(card.prices.eur * card.amount) + "€",
+					usd: roundPrice(card.prices.usd * card.amount) + "$",
+					expensive: card.prices.usd > 4,
+					amount: card.amount
+				});
+
+				if (card_category == "lands") {
+					manadist["lands"] = (manadist["lands"] || 0) + card.amount;
+				} else {
+					// Insert into mana curve list
+					if (card.cmc <= 1) {
+						data[card_category][0] += card.amount;
+					} else if (card.cmc >= 6) {
+						data[card_category][5] += card.amount;
+					} else {
+						data[card_category][card.cmc-1] += card.amount;
+					}
+					
+					// Mana distribution
+					parseManadist(card);
+
+					total_nonland += card.amount;
+				}
+			});
+		});
+
+		var chart = new Chart(ch[0].getContext("2d"),{
+			type: "bar",
+			data: {
+				labels: ["CMC: 1-","2","3","4","5","6+"],
+				datasets:[{
+					label: "Creatures",
+					data: data.creatures,
+					backgroundColor: ["#fd7e14","#fd7e14","#fd7e14","#fd7e14","#fd7e14","#fd7e14"]
+				},{
+					label: "Noncreatures",
+					data: data.noncreatures,
+					backgroundColor: ["#007bff","#007bff","#007bff","#007bff","#007bff","#007bff"]
+				}]
+			},
+			options:{
+				scales: {
+					xAxes: [{stacked: true}],
+					yAxes: [{stacked: true}]
+				}
+			}
+		});
+
+		// Mana distribution
+		col1.append("<center><strong>Mana Distribution</strong></center>");
+		var manadist_row = $("<div class='manadist-grid'>");
+		$.each(symbol_colors,function(idx,symbol) {
+			if (typeof manadist[idx] != "undefined") {
+				let c = $("<center>");
+
+				c.append($("<img>").attr("src",symbol.svg_uri));
+				if (idx != "lands" && idx != "multicolored") {
+					c.append($("<p>").html(manadist[idx] + "<br>" + Math.floor(manadist[idx] / total_nonland * 100 + 0.5) + "%"));
+				} else {
+					c.append($("<p>").html(manadist[idx]));
+				}
+
+				manadist_row.append($("<div class='manadist-grid-item'>").append(c));
+			}
+		});
+		col1.append(manadist_row);
+
+		// Type list
+		col2.append("<center><strong>Card Type List</strong></center>");
+		var order = {Creature:1,Instant:2,Sorcery:3,Enchantment:4,Planeswalker:5,default:6,Land:7};
+		var typelists = [];
+		$.each(typelist,function(idx,v) {
+			v.name = idx;
+			typelists.push(v);
+		});
+		typelists.sort(function(a,b) {
+			var l = (order[a.name] || order.default);
+			var r = (order[b.name] || order.default);
+			if (l == r) {return 0;}
+			return l > r ? 1 : -1;
+		});
+		for(let i=0;i<typelists.length;i++) {
+			let item = typelists[i];
+			col2.append($("<div class='typelist-item'>").text(item.name).append($("<div class='typelist-item-right'>").text(item.amount)));
+			$.each(item.subtypes,function(idx,v) {
+				col2.append($("<div class='typelist-item typelist-item-subtype'>").text(idx).append($("<div class='typelist-item-right'>").text(v)));
+			});
+		}
+
+		// Deck price
+		col3.append("<center><string>Deck Price</strong></center>");
+		var t = $("<table class='table table-striped'>");
+		t.append("<thead><tr><th style='width:99%'>Name</th><th>Euro €</th><th>USD $</th></tr></thead>");
+		var tb = $("<tbody>").appendTo(t);
+		col3.append(t);
+		var nr_not_most_expensive = 0;
+		for(let i=0;i<pricelist.length;i++) {
+			let tr = $("<tr>").append([
+				$("<td>").css("text-align","left").append(pricelist[i].name),
+				$("<td>").text(pricelist[i].eur),
+				$("<td>").text(pricelist[i].usd),
+			]);
+			tb.append(tr);
+
+			if (pricelist[i].expensive) {
+				tr.addClass("more-expensive");
+			} else {
+				tr.addClass("less-expensive");
+				tr.hide();
+				nr_not_most_expensive+=pricelist[i].amount;
+			}
+		}
+		var togglebtn = $("<div class='btn btn-primary'>").text("Show more").css("margin-left","8px");
+		var tgl = false;
+		togglebtn.click(function() {
+			tgl = !tgl;
+			if (tgl) {
+				$("tr.less-expensive",tb).show();
+				$("tr.more-expensive",tb).hide();
+				togglebtn.text("Show less");
+			} else {
+				$("tr.less-expensive",tb).hide();
+				$("tr.more-expensive",tb).show();
+				togglebtn.text("Show more");
+			}
+		});
+		tb.append($("<tr>").append($("<td colspan='3'>").append(["Plus " + nr_not_most_expensive + " more < 4$ cards",togglebtn])));
+		tb.append($("<tr>").append([
+			$("<th>").css("text-align","right").text("Sum:"),
+			$("<td>").text(roundPrice(total_price.eur) + "€"),
+			$("<td>").text(roundPrice(total_price.usd) + "$")
+		]));
 	}
 
 	function processCard(card,cards,amount,in_sideboard) {
@@ -417,9 +690,13 @@ $(document).ready(function() {
 			amount: amount,
 			image: image,
 			a: a,
+			url: card_url,
 			cmc: card.cmc,
 			multiverseid:card.multiverse_ids[0],
-			'set': card.set
+			'set': card.set,
+			prices: card.prices,
+			mana_cost: card.mana_cost,
+			type_line: card.type_line
 		});
 	}
 
@@ -436,6 +713,8 @@ $(document).ready(function() {
 
 		$.each(lines,function(row,line) {
 			line = line.trim();
+
+			if (line == "Deck") {return;}
 
 			if (line == "" || line.toLowerCase().indexOf("sideboard") != -1) {
 				in_sideboard = true;

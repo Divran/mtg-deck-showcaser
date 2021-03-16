@@ -43,6 +43,8 @@ body {
 
 .center .width-limiter {
 	display:inline-block;
+	width:100%;
+	max-width:1200px;
 }
 
 .center #input-card {
@@ -191,6 +193,45 @@ body {
 
 #how-does-it-work-collapse p:last-child {
 	margin-bottom:0;
+}
+
+.manadist-grid {
+	display:flex;
+	justify-content:center;
+	align-items:top;
+	flex-wrap:wrap;
+	margin-top:8px;
+}
+
+.manadist-grid-item {
+	display:inline-block;
+	margin-left:4px;
+	margin-right:4px;
+}
+
+.manadist-grid-item img {
+	max-width:40px;
+	max-height:40px;
+	width:100%;
+}
+
+.typelist-item {
+	display:block;
+	margin-bottom:2px;
+	text-align:left;
+	position:relative;
+	font-weight:bold;
+	border-bottom:1px solid rgba(0,0,0,0.07);
+}
+.typelist-item-right {
+	display:inline-block;
+	position:absolute;
+	right:0px;
+}
+.typelist-item.typelist-item-subtype {
+	color:#888;
+	padding-left:16px;
+	border-bottom:none;
 }
 
 /* dark mode */

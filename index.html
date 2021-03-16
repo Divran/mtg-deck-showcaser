@@ -17,6 +17,7 @@
 		<link href="css/deck-showcaser.css" rel="stylesheet">
 		<script src="js/base64-string.js"></script>
 		<script src="js/lz-string.js"></script>
+		<script src="js/scryfall-symbology.js"></script>
 
 		<!-- Global site tag (gtag.js) - Google Analytics -->
 		<script async src="https://www.googletagmanager.com/gtag/js?id=UA-128254022-1"></script>
@@ -142,6 +143,9 @@
 					<div id="loading-notification">Loading...</div>
 
 					<div class="card" id="result-card">
+						<div class="collapse">
+							<div class="card-body" id="statistics-body"></div>
+						</div>
 						<div class="collapse">
 							<div class="card-body" id="result-body"></div>
 						</div>
@@ -277,5 +281,8 @@
 				Source: <a href='https://github.com/Divran/mtg-deck-showcaser'>https://github.com/Divran/mtg-deck-showcaser</a>
 			</small>
 		</div>
+
+		<!-- include at the end to make the page load faster -->
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.js" integrity="sha512-d9xgZrVZpmmQlfonhQUvTR7lMPtO7NkZMkA0ABN3PHCbKA5nqylQ/yWlFAyY6hYgdF1Qh6nYiuADWwKB4C2WSw==" crossorigin="anonymous"></script>
 	</body>
 </html>

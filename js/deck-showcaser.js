@@ -358,7 +358,7 @@ $(document).ready(function() {
 		statistics.append(row.append([col1,col2,col3]));
 
 		// Mana curve
-		col1.append("<center><strong>Mana curve</strong></center>");
+		col1.append("<center><strong>Mana Curve</strong></center>");
 		var ch = $("<canvas style='width:100%; height:200px; max-width:400px;'>");
 		col1.append(ch);
 
@@ -575,7 +575,7 @@ $(document).ready(function() {
 
 			return l < r ? 1 : -1;
 		})
-		col3.append("<center><string>Deck Price</strong></center>");
+		col3.append("<center><strong>Deck Price List</strong></center>");
 		var t = $("<table class='table table-striped'>");
 		t.append("<thead><tr><th style='width:99%'>Name</th><th>Euro</th><th>USD</th></tr></thead>");
 		var tb = $("<tbody>").appendTo(t);

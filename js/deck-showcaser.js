@@ -550,7 +550,7 @@ $(document).ready(function() {
 		// Deck price
 		col3.append("<center><string>Deck Price</strong></center>");
 		var t = $("<table class='table table-striped'>");
-		t.append("<thead><tr><th style='width:99%'>Name</th><th>Euro €</th><th>USD $</th></tr></thead>");
+		t.append("<thead><tr><th style='width:99%'>Name</th><th>Euro</th><th>USD</th></tr></thead>");
 		var tb = $("<tbody>").appendTo(t);
 		col3.append(t);
 		var nr_not_most_expensive = 0;

@@ -139,8 +139,25 @@ body {
 	text-align:left;
 	font-size:0;
 }
-.mtg-grid .mtg-card img {
-	width:2.5in;
+@media print {
+	@page {
+		margin:0;
+		size:A4;
+	}
+	body {
+		padding:0;
+	}
+	.mtg-grid {
+		margin-top:0;
+		width:210mm;
+	}
+	.mtg-grid .mtg-card,
+	.mtg-grid .mtg-card img {
+		width:63.5mm;
+		max-width:63.5mm;
+		height:88.9mm;
+		max-height:88.9mm;
+	}
 }
 .mtg-grid .mtg-card img,
 .mtg-grid .mtg-card {

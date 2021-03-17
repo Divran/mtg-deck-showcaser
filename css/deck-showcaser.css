@@ -62,6 +62,7 @@ body {
 .mtg-card {
 	display:inline-block;
 	position:relative;
+	break-inside: avoid;
 }
 
 .mtg-card:not(:first-child) {
@@ -130,6 +131,27 @@ body {
     position:relative;
     max-width:100%;
     width:252px;
+}
+
+/* grid */
+.mtg-grid {
+	margin-top:22px;
+	text-align:left;
+	font-size:0;
+}
+.mtg-grid .mtg-card img {
+	width:2.5in;
+}
+.mtg-grid .mtg-card img,
+.mtg-grid .mtg-card {
+	margin:0px;
+	padding:0px;
+	border-radius:6px;
+}
+.mtg-grid .mtg-card img.secondary-card {
+	display:block;
+	position:relative;
+	top:0;
 }
 
 /* options */

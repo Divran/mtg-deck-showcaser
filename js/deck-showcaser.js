@@ -38,15 +38,18 @@ $(document).ready(function() {
 		result.empty();
 		statistics.empty();
 		statistics.collapse("hide");
+		var grid = $("<div class='mtg-grid'></div>");
 		var row = $("<div class='mtg-row'></div>");
 		var creatures = $("<div class='mtg-col'><strong>Creatures</strong><div class='mtg-list'></div></div>");
 		var noncreatures = $("<div class='mtg-col'><strong>Non-creatures</strong><div class='mtg-list'></div></div>");
 		var lands = $("<div class='mtg-col'><strong>Lands</strong><div class='mtg-list'></div></div>");
 		var sideboard = $( "<div class='mtg-col'><strong>Sideboard</strong><div class='mtg-list'></div></div>");
 		var columns = { "creatures":$(".mtg-list",creatures),"noncreatures":$(".mtg-list",noncreatures),
-						"lands":$(".mtg-list",lands),"sideboard":$(".mtg-list",sideboard)};
+						"lands":$(".mtg-list",lands),"sideboard":$(".mtg-list",sideboard),"grid":grid};
 		row.append([creatures,noncreatures,lands,sideboard]);
 		result.append(row);
+		result.append(grid);
+		grid.hide();
 
 		return columns;
 	}
@@ -163,6 +166,8 @@ $(document).ready(function() {
 	// Displays cards
 	function displayCards( cards ) {
 		var columns = resetResults();
+		var grid = columns.grid;
+		delete columns.grid;
 
 		var all_amount = 0;
 		$.each(cards,function(card_category,_cards) {
@@ -182,6 +187,8 @@ $(document).ready(function() {
 			$.each(_cards,function(idx,card) {
 				var amount = card.amount;
 				total_amount += amount;
+
+				for(let y=0;y<amount;y++) {grid.append(card.a.clone(true));}
 
 				if (amount > 4) {
 					parent.append(card.a);
@@ -266,9 +273,41 @@ $(document).ready(function() {
 			verticalAlign:"middle"
 		});
 		displayStatistics(cards);
+
+		var gridbtn = $("<div class='btn btn-primary'>Toggle grid view</div>").css("margin-left","4px");
+		var printbtn = $("<div class='btn btn-info btn-sm'>Print</div>").css("margin-left","4px").hide();
+		gridbtn.click(function() {
+			if ($(".mtg-grid",result).is(":visible")) {
+				$(".mtg-grid",result).hide();
+				$(".mtg-row",result).show();
+				printbtn.hide();
+			} else {
+				$(".mtg-grid",result).show();
+				$(".mtg-row",result).hide();
+				printbtn.show();
+				if (options["hide-basic-grid"]) {
+					$(".mtg-grid .basic-land",result).hide();
+				} else {
+					$(".mtg-grid .basic-land",result).show();
+				}
+			}
+		});
+		var original_grid_parent = grid.parent();
+		printbtn.click(function() {
+			var entire_page = $($(".container-fluid")[0]).hide();
+			$(".credits").hide();
+			grid.detach().appendTo($("body"));
+			window.print();
+			entire_page.show();
+			$(".credits").show();
+			grid.detach().appendTo(original_grid_parent);
+		});
+
 		result.prepend([
 			totalnr,
 			statistics_btn,
+			gridbtn,
+			printbtn,
 			"<br>"
 		]);
 
@@ -653,6 +692,11 @@ $(document).ready(function() {
 		var card_url = card.scryfall_uri;
 
 		var a = $("<a target='_blank' href='"+card_url+"' class='mtg-card'></a>");
+
+		// check if basic land
+		if (card_category == "lands" && card.type_line.indexOf("Basic") == 0) {
+			a.addClass("basic-land");
+		}
 
 		if (typeof card.card_faces != "undefined") { // multiple faces, load all
 			// add images for other faces

@@ -43,8 +43,10 @@ body {
 
 .center .width-limiter {
 	display:inline-block;
-	width:100%;
-	max-width:1200px;
+}
+
+#statistics-body {
+	min-width:800px;
 }
 
 .center #input-card {

@@ -748,11 +748,16 @@ $(document).ready(function() {
 				);
 			}
 
+			if (card.basic_land) {
+				p.addClass("basic-land");
+			}
+
 			return p;
 		}
 		
 		// check if basic land
 		if (card_category == "lands" && card.type_line.indexOf("Basic") == 0) {
+			card.basic_land = true;
 			a.addClass("basic-land");
 		}
 

@@ -682,7 +682,6 @@ $(document).ready(function() {
 	}
 
 	function processCard(card,cards,amount,in_sideboard) {
-		console.log("card:",card.name,card);
 		var name = card.name;
 		var type = card.type_line;
 		var primary_image = getCardImage(card);

@@ -188,7 +188,16 @@ $(document).ready(function() {
 				var amount = card.amount;
 				total_amount += amount;
 
-				for(let y=0;y<amount;y++) {grid.append(card.a.clone(true));}
+				for(let y=0;y<amount;y++) {
+					if ($("img",card.a).length > 1) {
+						$.each($("img",card.a),function() {
+							grid.append(card.a.clone().empty().append($(this).clone()));
+						});
+					} else {
+						grid.append(card.a.clone());
+					}
+					grid.append(card.textonly.clone());
+				}
 
 				if (amount > 4) {
 					parent.append(card.a);
@@ -274,17 +283,18 @@ $(document).ready(function() {
 		});
 		displayStatistics(cards);
 
-		var gridbtn = $("<div class='btn btn-primary'>Toggle grid view</div>").css("margin-left","4px");
-		var printbtn = $("<div class='btn btn-info btn-sm'>Print</div>").css("margin-left","4px").hide();
+		var gridbtn = $("<div class='btn btn-primary'>Toggle grid view</div>");
+		var printbtn = $("<div class='btn btn-info disabled'>Print</div>");
+		var textonlybtn = $("<div class='btn btn-info  disabled'>Text only</div>");
 		gridbtn.click(function() {
 			if ($(".mtg-grid",result).is(":visible")) {
 				$(".mtg-grid",result).hide();
 				$(".mtg-row",result).show();
-				printbtn.hide();
+				printbtn.addClass("disabled"); textonlybtn.addClass("disabled");
 			} else {
 				$(".mtg-grid",result).show();
 				$(".mtg-row",result).hide();
-				printbtn.show();
+				printbtn.removeClass("disabled"); textonlybtn.removeClass("disabled");
 				if (options["hide-basic-grid"]) {
 					$(".mtg-grid .basic-land",result).hide();
 				} else {
@@ -294,6 +304,7 @@ $(document).ready(function() {
 		});
 		var original_grid_parent = grid.parent();
 		printbtn.click(function() {
+			if ($(this).hasClass("disabled")) return;
 			var entire_page = $($(".container-fluid")[0]).hide();
 			$(".credits").hide();
 			grid.detach().appendTo($("body"));
@@ -302,12 +313,23 @@ $(document).ready(function() {
 			$(".credits").show();
 			grid.detach().appendTo(original_grid_parent);
 		});
+		textonlybtn.click(function() {
+			if ($(this).hasClass("disabled")) return;
+			if (grid.hasClass("textonly")) {
+				grid.removeClass("textonly");
+			} else {
+				grid.addClass("textonly");
+			}
+		});
 
 		result.prepend([
 			totalnr,
 			statistics_btn,
-			gridbtn,
-			printbtn,
+			$("<div class='btn-group'>").append([
+				gridbtn,
+				textonlybtn,
+				printbtn
+			]).css("margin-left","4px"),
 			"<br>"
 		]);
 
@@ -660,6 +682,7 @@ $(document).ready(function() {
 	}
 
 	function processCard(card,cards,amount,in_sideboard) {
+		console.log("card:",card.name,card);
 		var name = card.name;
 		var type = card.type_line;
 		var primary_image = getCardImage(card);
@@ -692,16 +715,61 @@ $(document).ready(function() {
 		var card_url = card.scryfall_uri;
 
 		var a = $("<a target='_blank' href='"+card_url+"' class='mtg-card'></a>");
+		var textonly = $([]);
+		function makeTextOnly(card,face) {
+			var p = $("<div class='mtg-card mtg-card-textonly'>");
+			function replaceSymbols(text) {
+				text = text.replaceAll("\n","<br>")
+				$.each(scryfall_symbology,function(idx,symbol) {
+					if (text.indexOf(symbol.symbol) != -1 && symbol.svg_uri) {
+						text = text.replaceAll(symbol.symbol,"<img src='"+symbol.svg_uri+"' class='symbol-img'>");
+					}
+				});
+				return text;
+			}
+			p.append([
+				$("<p class='mtg-card-name'>").text(face.name),
+				$("<span class='float-right mtg-card-cost'>").html(replaceSymbols(face.mana_cost)),"<br>",
+				$("<p class='mtg-card-type-line'>").text(face.type_line),
+				$("<span class='float-right mtg-card-rarity-text'>").text(card.rarity.substr(0,1).toUpperCase()),
+				$("<div class='mtg-card-text-container'>").append(
+					$("<p class='mtg-card-oracle-text'>").html(replaceSymbols(face.oracle_text))
+				)
+			]);
 
+			if (face.power && face.toughness) {
+				p.append(
+					$("<div class='mtg-card-pt'>").text(face.power + "/" + face.toughness)
+				)
+			}
+
+			if (face.flavor_text && face.flavor_text != "") {
+				$(".mtg-card-text-container",p).append(
+					$("<p class='mtg-card-flavor-text'>").html((face.flavor_text || "").replace("\n","<br>"))
+				);
+			}
+
+			return p;
+		}
+		
 		// check if basic land
 		if (card_category == "lands" && card.type_line.indexOf("Basic") == 0) {
 			a.addClass("basic-land");
 		}
 
 		if (typeof card.card_faces != "undefined") { // multiple faces, load all
+			if (card.layout == "split" || card.layout == "adventure") {
+				textonly = $("<div class='mtg-card-textonly-split-container'>").append(
+					$("<div class='mtg-card-textonly-split'>").append([
+						makeTextOnly(card,card.card_faces[0]),
+						makeTextOnly(card,card.card_faces[1])
+					])
+				);
+			}
+
 			// add images for other faces
 			var len = card.card_faces.length;
-			for(var i=0;i<len;i++) {
+			for(let i=0;i<len;i++) {
 				let m = getCardImage(card.card_faces[i]);
 				if (m.image == "") { // no image was found, fall back to the base image and abort
 					m.image = image;
@@ -715,11 +783,17 @@ $(document).ready(function() {
 				let img_2 = $("<img>").attr("src",m.image).addClass(m.border_class);
 				if (i>0) {img_2.addClass("secondary-card");}
 				a.append(img_2);
+
+				if (card.layout != "split") {
+					textonly.push(makeTextOnly(card,card.card_faces[i])[0]);
+				}
 			}
 		} else { // just one face, load it
 			var img = $("<img>").attr("src",image).addClass(fix_border_class);
 			img.hide();
 			a.append(img);
+
+			textonly = makeTextOnly(card,card);
 
 			hires_image = [primary_image.hires_image];
 		}
@@ -756,19 +830,26 @@ $(document).ready(function() {
 			fs_im.hide();
 		});
 
+		var mana_cost = card.mana_cost;
+		if (typeof card.mana_cost == "undefined" && typeof card.card_faces != "undefined" && card.card_faces.length > 0) {
+			mana_cost = card.card_faces[0].mana_cost;
+		}
+
 		if (typeof cards[card_category] == "undefined") {cards[card_category] = [];}
 		cards[card_category].push({
 			name: name,
 			amount: amount,
 			image: image,
 			a: a,
+			textonly: textonly,
 			url: card_url,
 			cmc: card.cmc,
 			multiverseid:card.multiverse_ids[0],
 			'set': card.set,
 			prices: card.prices,
-			mana_cost: card.mana_cost,
-			type_line: card.type_line
+			mana_cost: mana_cost,
+			type_line: card.type_line,
+			faces: card.card_faces
 		});
 	}
 

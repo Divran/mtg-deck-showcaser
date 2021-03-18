@@ -783,7 +783,7 @@ $(document).ready(function() {
 				if (i>0) {img_2.addClass("secondary-card");}
 				a.append(img_2);
 
-				if (card.layout != "split") {
+				if (card.layout != "split" && card.layout != "adventure") {
 					textonly.push(makeTextOnly(card,card.card_faces[i])[0]);
 				}
 			}

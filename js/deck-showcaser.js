@@ -284,27 +284,27 @@ $(document).ready(function() {
 		displayStatistics(cards);
 
 		var gridbtn = $("<div class='btn btn-primary'>Toggle grid view</div>");
-		var printbtn = $("<div class='btn btn-info disabled'>Print</div>");
-		var textonlybtn = $("<div class='btn btn-info  disabled'>Text only</div>");
-		gridbtn.click(function() {
-			if ($(".mtg-grid",result).is(":visible")) {
-				$(".mtg-grid",result).hide();
-				$(".mtg-row",result).show();
-				printbtn.addClass("disabled"); textonlybtn.addClass("disabled");
-			} else {
+		var printbtn = $("<div class='btn btn-info'>Print</div>");
+		var textonlybtn = $("<div class='btn btn-info'>Text only</div>");
+		function toggleGrid(b) {
+			if (typeof b == "undefined") {b = !$(".mtg-grid",result).is(":visible");}
+			if (b) {
 				$(".mtg-grid",result).show();
 				$(".mtg-row",result).hide();
-				printbtn.removeClass("disabled"); textonlybtn.removeClass("disabled");
 				if (options["hide-basic-grid"]) {
 					$(".mtg-grid .basic-land",result).hide();
 				} else {
 					$(".mtg-grid .basic-land",result).show();
 				}
+			} else {
+				$(".mtg-grid",result).hide();
+				$(".mtg-row",result).show();
 			}
-		});
+		}
+		gridbtn.click(function() {toggleGrid();});
 		var original_grid_parent = grid.parent();
 		printbtn.click(function() {
-			if ($(this).hasClass("disabled")) return;
+			toggleGrid(true);
 			var entire_page = $($(".container-fluid")[0]).hide();
 			$(".credits").hide();
 			grid.detach().appendTo($("body"));
@@ -314,7 +314,7 @@ $(document).ready(function() {
 			grid.detach().appendTo(original_grid_parent);
 		});
 		textonlybtn.click(function() {
-			if ($(this).hasClass("disabled")) return;
+			toggleGrid(true);
 			if (grid.hasClass("textonly")) {
 				grid.removeClass("textonly");
 			} else {
@@ -727,10 +727,10 @@ $(document).ready(function() {
 				return text;
 			}
 			p.append([
-				$("<p class='mtg-card-name'>").text(face.name),
-				$("<span class='float-right mtg-card-cost'>").html(replaceSymbols(face.mana_cost)),"<br>",
+				$("<span class='mtg-card-cost'>").html(replaceSymbols(face.mana_cost)),
+				$("<p class='mtg-card-name'>").text(face.name),"<br>",
+				$("<span class='mtg-card-rarity-text'>").text(card.rarity.substr(0,1).toUpperCase()),
 				$("<p class='mtg-card-type-line'>").text(face.type_line),
-				$("<span class='float-right mtg-card-rarity-text'>").text(card.rarity.substr(0,1).toUpperCase()),
 				$("<div class='mtg-card-text-container'>").append(
 					$("<p class='mtg-card-oracle-text'>").html(replaceSymbols(face.oracle_text))
 				)
@@ -740,12 +740,12 @@ $(document).ready(function() {
 				p.append(
 					$("<div class='mtg-card-pt'>").text(face.power + "/" + face.toughness)
 				)
+				p.addClass("haspt");
 			}
 
 			if (face.flavor_text && face.flavor_text != "") {
-				$(".mtg-card-text-container",p).append(
-					$("<p class='mtg-card-flavor-text'>").html((face.flavor_text || "").replace("\n","<br>"))
-				);
+				p.append($("<p class='mtg-card-flavor-text'>").html((face.flavor_text || "").replace("\n","<br>")));
+				p.addClass("has-flavor");
 			}
 
 			if (card.basic_land) {
@@ -761,14 +761,28 @@ $(document).ready(function() {
 			a.addClass("basic-land");
 		}
 
+		// splitcards
+		// true to rotate both faces 90deg to the side
+		// false to rotate each face opposite each other
+		// undefined to not combine faces at all (separate card)
+		let splitcards = {"split":true,"adventure":true,"flip":false};
+		if (options["merge-two-faced"] == "1") {
+			splitcards["modal_dfc"] = false;
+			splitcards["transform"] = false;
+		}
+
 		if (typeof card.card_faces != "undefined") { // multiple faces, load all
-			if (card.layout == "split" || card.layout == "adventure") {
-				textonly = $("<div class='mtg-card-textonly-split-container'>").append(
-					$("<div class='mtg-card-textonly-split'>").append([
-						makeTextOnly(card,card.card_faces[0]),
-						makeTextOnly(card,card.card_faces[1])
-					])
-				);
+			if (typeof splitcards[card.layout] != "undefined") {
+				let temp = $("<div class='mtg-card-textonly-split'>").append([
+					makeTextOnly(card,card.card_faces[0]),
+					makeTextOnly(card,card.card_faces[1])
+				]);
+
+				if (splitcards[card.layout] === false) {
+					temp.addClass("rotate180");
+				}
+
+				textonly = $("<div class='mtg-card-textonly-split-container'>").append(temp);
 			}
 
 			// add images for other faces
@@ -788,7 +802,7 @@ $(document).ready(function() {
 				if (i>0) {img_2.addClass("secondary-card");}
 				a.append(img_2);
 
-				if (card.layout != "split" && card.layout != "adventure") {
+				if (typeof splitcards[card.layout] == "undefined") {
 					textonly.push(makeTextOnly(card,card.card_faces[i])[0]);
 				}
 			}
@@ -832,6 +846,17 @@ $(document).ready(function() {
 		});
 		a.on("mouseleave",function() {
 			fs_im.hide();
+		});
+		var move_tid;
+		$("body").off("mousemove.mtgdeck");
+		$("body").on("mousemove.mtgdeck",function() {
+			if (options["fullscreen-img"]) {
+				if (move_tid) {clearTimeout(move_tid);}
+				move_tid = setTimeout(function() {
+					$(".fullscreen-img").removeClass("transparent");
+				},250);
+				$(".fullscreen-img").addClass("transparent");
+			}
 		});
 
 		var mana_cost = card.mana_cost;

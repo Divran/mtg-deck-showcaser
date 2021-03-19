@@ -166,7 +166,7 @@ body {
 	display:inline-block;
 	width:63.5mm;
 	height:88.9mm;
-	font-size:16px;
+	font-size:4mm;
 	line-height:1em;
 	border:1px solid black;
 	padding:2mm;
@@ -174,28 +174,44 @@ body {
 	position:relative;
 }
 .mtg-grid.textonly .mtg-card p {
-	margin-bottom:4px;
-	display:inline-block;
+	margin:0;
+	padding:0;
+	display:inline;
 }
-.mtg-grid.textonly .mtg-card .mtg-card-name {font-size:16px;}
-.mtg-grid.textonly .mtg-card .mtg-card-type-line {font-size:12px;}
-.mtg-grid.textonly .mtg-card .mtg-card-rarity-text {font-size:12px;}
-.mtg-grid.textonly .mtg-card .mtg-card-oracle-text {font-size:14px;}
+.mtg-grid.textonly .mtg-card .mtg-card-cost {float:right; display:inline-block;}
+.mtg-grid.textonly .mtg-card .mtg-card-name {font-size:4mm;}
+.mtg-grid.textonly .mtg-card .mtg-card-type-line {font-size:3.2mm;}
+.mtg-grid.textonly .mtg-card .mtg-card-rarity-text {font-size:3.2mm; display:inline; position:absolute; right:2mm; margin-top:0.5mm;}
+.mtg-grid.textonly .mtg-card .mtg-card-oracle-text {font-size:3.5mm;}
+
+/* split card sizes */
+.mtg-grid.textonly .mtg-card.mtg-card-textonly-split .mtg-card-name {font-size:3.0mm;}
+.mtg-grid.textonly .mtg-card.mtg-card-textonly-split .mtg-card-type-line {font-size:2.8mm;}
+.mtg-grid.textonly .mtg-card.mtg-card-textonly-split .mtg-card-rarity-text {font-size:2.8mm;}
+.mtg-grid.textonly .mtg-card.mtg-card-textonly-split .mtg-card-oracle-text {font-size:2.7mm;}
+.mtg-grid.textonly .mtg-card.mtg-card-textonly-split .mtg-card-flavor-text {font-size:2.2mm;}
+
 .mtg-grid.textonly .mtg-card .mtg-card-text-container {
 	display:flex;
 	position:absolute;
-	top:0;
-	bottom:0;
+	top:12mm;
+	bottom:2mm;
 	width:calc(100% - 4mm);
 	flex-flow:column;
 	justify-content:center;
 }
+.mtg-grid.textonly .mtg-card.has-flavor .mtg-card-text-container {bottom:6.5mm;}
 .mtg-grid.textonly .mtg-card .mtg-card-flavor-text {
-	font-size:10px;
+	font-size:2.5mm;
 	font-style:italic;
-	bottom:10px;
+	bottom:2mm;
+	left:2mm;
+	right:2mm;
 	border-top:1px solid rgba(0,0,0,0.2);
-	margin-top:6px;
+	position:absolute;
+}
+.mtg-grid.textonly .mtg-card.haspt .mtg-card-flavor-text {
+	right:15.5mm;
 }
 .mtg-grid.textonly .mtg-card .mtg-card-pt {
 	display:inline-block;
@@ -213,11 +229,27 @@ body {
 	height:88.9mm;
 }
 .mtg-grid.textonly .mtg-card-textonly-split {
-	transform: rotate(-90deg) translate(-14.5%, -20%);
+	transform: rotate(-90deg) translate(-14.3%, -20%);
 	width: 88.9mm;
 	height: 63.5mm;
     display: flex;
     flex-flow: row;
+}
+.mtg-grid.textonly .mtg-card-textonly-split.rotate180 {
+	transform: rotate(0deg) translate(0, 0);
+	width:63.5mm;
+	height:88.9mm;
+	display:flex;
+	flex-flow:column;
+}
+.mtg-grid.textonly .mtg-card-textonly-split.rotate180 .mtg-card.mtg-card-textonly {
+	width:63.5mm;
+	height:44.45mm;
+	max-width:63.5mm;
+	max-height:44.45mm;
+}
+.mtg-grid.textonly .mtg-card-textonly-split.rotate180 .mtg-card.mtg-card-textonly:not(:first-child) {
+	transform: rotate(180deg);
 }
 .mtg-grid .mtg-card img:not(.symbol-img) {
 	width:63.5mm;
@@ -290,6 +322,8 @@ body {
 	display: flex;
 	flex-direction: row;
 	background-color:rgba(0,0,0,0.8);
+
+	transition:opacity 0.1s ease;
 }
 
 .fullscreen-img .fs-img {
@@ -311,6 +345,8 @@ body {
 	max-height: 94%;
 	box-shadow: 0px 0px 24px 16px white;
 }
+
+.fullscreen-img.transparent {opacity:0.3;}
 
 /* other */
 #how-does-it-work-collapse .center {

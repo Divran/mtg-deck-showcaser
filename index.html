@@ -61,37 +61,49 @@
 						<tr>
 							<td class="options-auto-split" data-value="1">
 								<input type="checkbox">
-								<label>Do: Auto-split</label><br>
+								<label>Enable Auto-split</label><br>
 								<small>Automatically detects when a column gets too tall, and splits it into two columns. Tries to do it cleverly so you don't end up with a column of only 1 or 2 cards <strong>(default)</strong></small>
 							</td>
 							<td class="options-auto-split" data-value="0">
 								<input type="checkbox">
-								<label>Don't: Auto-split</label><br>
+								<label>Disable Auto-split</label><br>
 								<small>Keeps all categories as single columns, never splits them.<br>(Changes will take effect on next deck load).</small>
 							</td>
 						</tr>
 						<tr>
 							<td class="options-fullscreen-img" data-value="1">
 								<input type="checkbox">
-								<label>Do: fullscreen images</label><br>
+								<label>Enable fullscreen images</label><br>
 								<small>When you hover over an image, loads a high-resolution version of the image and displays it fullscreen instead.</small>
 							</td>
 							<td class="options-fullscreen-img" data-value="0">
 								<input type="checkbox">
-								<label>Don't: fullscreen images</label><br>
+								<label>Disable fullscreen images</label><br>
 								<small>Default behavior of simply moving the image to the top of the pile of cards on hover <strong>(default)</strong>.<br>(Changes will take effect immediately).</small>
 							</td>
 						</tr>
 						<tr>
 							<td class="options-hide-basic-grid" data-value="1">
 								<input type="checkbox">
-								<label>Do: Hide basic in grid</label><br>
+								<label>Hide basic lands in grid</label><br>
 								<small>When you open grid view, hide all basic lands. <strong>(default)</strong></small>
 							</td>
 							<td class="options-hide-basic-grid" data-value="0">
 								<input type="checkbox">
-								<label>Don't: Hide basic in grid</label><br>
+								<label>Show basic lands in grid</label><br>
 								<small>When you open grid view, show all basic lands.</small>
+							</td>
+						</tr>
+						<tr>
+							<td class="options-merge-two-faced" data-value="0">
+								<input type="checkbox">
+								<label>Separate two-faced</label><br>
+								<small>In grid text view, two-faced cards are treated as two separate cards. <strong>(default)</strong></small>
+							</td>
+							<td class="options-merge-two-faced" data-value="1">
+								<input type="checkbox">
+								<label>Combine two-faced</label><br>
+								<small>In grid text view, two-faced cards are cobmined into one card similar to split cards.</small>
 							</td>
 						</tr>
 						<tr>
@@ -202,7 +214,8 @@
 					"auto-split": "1", // 0=no, 1=yes (default: 1)
 					"fullscreen-img": "0", // 0=no, 1=yes (default:0)
 					"darkmode": "0", //0=no, 1=yes (default:0)
-					"hide-basic-grid": "1" // 1=hide basic lads, 0=don't hide basic lands (default: 1)
+					"hide-basic-grid": "1", // 1=hide basic lads, 0=don't hide basic lands (default: 1)
+					"merge-two-faced": "0" //0=separate two-faced cards, 1=merge two-faced cards (default:0)
 				};
 
 				// options handled here instead of in showcaser code

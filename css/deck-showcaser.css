@@ -439,3 +439,13 @@ body.bg-dark .modal-dialog .modal-content .modal-header,
 body.bg-dark .modal-dialog .modal-content .modal-footer {
 	border-color:#32383e;
 }
+
+#loading-notification .loading-notification-box {
+	max-width:400px;
+	font-size:14px;
+	padding:16px;
+	border:1px solid #eee;
+	margin-top:60px;
+	margin-left:auto;
+	margin-right:auto;
+}

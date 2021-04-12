@@ -442,7 +442,7 @@ body.bg-dark .modal-dialog .modal-content .modal-footer {
 
 #loading-notification .loading-notification-box {
 	max-width:400px;
-	font-size:14px;
+	font-size:12px;
 	padding:16px;
 	border:1px solid #eee;
 	margin-top:60px;

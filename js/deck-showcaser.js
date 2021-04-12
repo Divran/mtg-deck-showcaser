@@ -425,7 +425,7 @@ $(document).ready(function() {
 
 		function roundPrice(p) {return Math.floor(p*10000+0.5)/10000;}
 
-		var data = {creatures:[0,0,0,0,0,0],noncreatures:[0,0,0,0,0,0]};
+		var data = {creatures:[0,0,0,0,0,0],noncreatures:[0,0,0,0,0,0],sideboard:[0,0,0,0,0,0]};
 		var manadist = {};
 		var typelist = {};
 		var pricelist = [];

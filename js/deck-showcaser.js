@@ -33,6 +33,14 @@ $(document).ready(function() {
 	}
 	$(window).resize(resizeFakeCards);
 
+	function getCardPrice(prices,name) {
+		var value = parseFloat(prices[name]);
+		if (isNaN(value)) {value = parseFloat(prices[name+"_foil"]);}
+		if (isNaN(value)) {value = 0;}
+		return value;
+	}
+
+
 	// Clears all visible cards, resets the columns, and returns them
 	function resetResults() {
 		result.empty();
@@ -512,15 +520,15 @@ $(document).ready(function() {
 				// Typelist
 				parseSubtypes(card);
 
-				total_price.eur += roundPrice(card.prices.eur * card.amount);
-				total_price.usd += roundPrice(card.prices.usd * card.amount);
+				total_price.eur += roundPrice(getCardPrice(card.prices,"eur") * card.amount);
+				total_price.usd += roundPrice(getCardPrice(card.prices,"usd") * card.amount);
 				pricelist.push({
 					name: $("<div>").append([
 						$("<a>").attr("href",card.url).text(card.name),
 						" " + (card.amount > 1 ? "x"+card.amount : "")
 					]),
-					eur: roundPrice(card.prices.eur * card.amount) + "€",
-					usd: roundPrice(card.prices.usd * card.amount) + "$",
+					eur: roundPrice(getCardPrice(card.prices,"eur") * card.amount) + "€",
+					usd: roundPrice(getCardPrice(card.prices,"usd") * card.amount) + "$",
 					card: card
 				});
 
@@ -628,8 +636,8 @@ $(document).ready(function() {
 
 		// Deck price
 		pricelist.sort(function(a,b) {
-			var l = a.card.prices.usd * a.card.amount;
-			var r = b.card.prices.usd * b.card.amount;
+			var l = getCardPrice(a.card.prices,"usd") * a.card.amount;
+			var r = getCardPrice(b.card.prices,"usd") * b.card.amount;
 			if (l == r) {
 				return a.card.name.localeCompare(b.card.name)
 			}

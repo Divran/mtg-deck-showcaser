@@ -151,9 +151,23 @@
 									</div>
 								</div>
 								<textarea id="input" class="form-control"></textarea>
+								<div class="alert alert-danger d-none mt-2 mb-0" id="cant-load-alert">
+									<strong>
+										<p>The following cards could not be loaded.
+											<ul>
+												<li>They will not be included in the URL, so be sure to fix any issues before closing the page.</li>
+												<li>Try fixing any spelling mistakes, or specifying a different set for these cards.</li>
+												<li>Try specifying no set at all to widen the search.</li>
+												<li>It's possible the Scryfall API hasn't been updated yet, in which case there's nothing we can do except wait.</li>
+											</ul>
+										</p>
+									</strong>
+									<div id="cant-load-alert-list"></div>
+								</div>
 							</div>
 						</div>
 						<div class="card-footer">
+							<div class="float-left d-none alert alert-danger small px-2 py-1 m-0" id="cant-load-alert-header"></div>
 							<div class="float-right">
 								<div class="btn btn-info btn-sm options-menu-btn">Options</div>
 							</div>
@@ -307,7 +321,7 @@
 
 		<div class="credits">
 			<small>
-				Made by Divran September 2018, last updated March 2021<br>
+				Made by Divran September 2018, last updated April 2024<br>
 				Uses Scryfall API at <a href="https://scryfall.com/">https://scryfall.com/</a> for card images/data/pricing/etc.<br>
 				Source: <a href='https://github.com/Divran/mtg-deck-showcaser'>https://github.com/Divran/mtg-deck-showcaser</a>
 			</small>

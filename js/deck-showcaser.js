@@ -855,15 +855,58 @@ $(document).ready(function() {
 		a.on("mouseleave",function() {
 			fs_im.hide();
 		});
-		var move_tid;
+		var move_tid = null;
+		var reset_startpos_tid = null;
+		var startPos = {x:0,y:0};
+		var curPos = {x:0,y:0};
+		var isTransparent = false;
 		$("body").off("mousemove.mtgdeck");
-		$("body").on("mousemove.mtgdeck",function() {
+		$("body").on("mousemove.mtgdeck",function(e) {
 			if (options["fullscreen-img"]) {
-				if (move_tid) {clearTimeout(move_tid);}
-				move_tid = setTimeout(function() {
+				function disableTransparency() {
+					isTransparent = false;
 					$(".fullscreen-img").removeClass("transparent");
-				},250);
-				$(".fullscreen-img").addClass("transparent");
+					move_tid = null;
+
+					//if (reset_startpos_tid) {clearTimeout(reset_startpos_tid);}
+					//reset_startpos_tid = setTimeout(function() {
+						startPos.x = curPos.x;
+						startPos.y = curPos.y;	
+					//},200);
+				}
+				function enableTransparency(recursion) {
+					var x = (curPos.x-startPos.x);
+					var y = (curPos.y-startPos.y);
+					var dist = Math.sqrt(x*x+y*y);
+					if (dist>40) {
+						isTransparent = true;
+						$(".fullscreen-img").addClass("transparent");
+						move_tid = setTimeout(disableTransparency,50);
+					} else {
+						move_tid = null;
+					}
+				}
+
+				curPos.x = e.clientX;
+				curPos.y = e.clientY;
+				if (reset_startpos_tid) {clearTimeout(reset_startpos_tid);}
+				reset_startpos_tid = setTimeout(function() {
+					startPos.x = curPos.x;
+					startPos.y = curPos.y;	
+				},200);
+
+				if (!isTransparent) {
+					if (!move_tid) {
+						move_tid = setTimeout(enableTransparency,50);
+						if (startPos.x==0 && startPos.y==0) {
+							startPos.x = e.clientX;
+							startPos.y = e.clientY;
+						}
+					}
+				} else {
+					if (move_tid) {clearTimeout(move_tid);}
+					move_tid = setTimeout(disableTransparency,50);
+				}
 			}
 		});
 
@@ -968,7 +1011,7 @@ $(document).ready(function() {
 
 			r[set][0].names.push(name);
 			r[set][0].amount_by_name[name.toLowerCase()] = amount;
-			found_cards[name.toLowerCase()] = false;
+			found_cards[name.toLowerCase()] = {status:false,line:line};
 		});
 
 		if (error_parsing_deck) {return;} // abort
@@ -1011,10 +1054,10 @@ $(document).ready(function() {
 						$.each(data.data,function(idx,card) {
 							//if (found_cards[card.name] == true) {return;}
 							var name = card.name.toLowerCase();
-							found_cards[name] = true;
+							found_cards[name].status = true;
 
 							if (card.multiverse_ids.length == 0) {
-								no_mid.push(card.name);
+								no_mid.push(found_cards[name].line);
 							}
 
 							var amount = amount_by_name[name] || 0;
@@ -1025,7 +1068,7 @@ $(document).ready(function() {
 									for(var i=0;i<card.card_faces.length;i++) {
 										let face = card.card_faces[i];
 										let face_name = face.name.toLowerCase();
-										found_cards[face_name] = true;
+										found_cards[face_name].status = true;
 
 										if (typeof amount_by_name[face_name] != "undefined") {
 											amount = amount_by_name[face_name];
@@ -1043,20 +1086,48 @@ $(document).ready(function() {
 
 						if (num_requests == 0) {
 							var not_found = [];
-							$.each(found_cards,function(name,b) {
-								if (b == false) {
-									not_found.push(name);
+							$.each(found_cards,function(name,f) {
+								if (f.status == false) {
+									not_found.push(f.line);
 								}
 							});
 
-							if (not_found.length > 0) {
-								alert( "Card(s) '" + not_found.join("; ") + "' not found! It's possible the API hasn't been updated yet.");
-							}
+							var alert_div = $("#cant-load-alert");
+							var alert_header = $("#cant-load-alert-header");
+							if (not_found.length > 0 || no_mid.length > 0) {
+								alert_div.removeClass("d-none");
+								alert_header.removeClass("d-none");
 
-							if (no_mid.length > 0) {
-								alert( "Card(s) '" + no_mid.join("; ") + "' have no multiverse IDs!\n"+
-										"These cards cannot be encoded into the URL and will therefore not show up if you send the link to someone.\n"+
-										"Try specifying a different set for these cards. Some reprints don't have multiverseids. It's also possible the API hasn't been updated yet." );
+								var escape_element;
+								function escapehtml( text ) {
+									if (!escape_element) {
+										escape_element = $( "<div>" );
+									}
+
+									escape_element.text( text );
+									var ret = escape_element.html();
+									escape_element.text( "" );
+									return ret;
+								}
+
+
+								var not_found_html = "";
+
+								if (not_found.length > 0) {
+									not_found_html += "<p>Unable to find the following " + not_found.length + " cards!<br/>";
+									not_found_html += "<pre style='border:1px solid #c5c5c5; padding:0.2rem;'><code>" + not_found.reduce((prev, cur) => prev + "\n" + escapehtml(cur)) + "</code></pre>";
+								}
+
+								if (no_mid.length > 0) {
+									var not_found_html = "<p>The following " + not_found.length + " cards have no multiverse ID! Some reprints don't have multiverse IDs at all, try using a different set.<br/>";
+									not_found_html += "<pre style='border:1px solid #c5c5c5; padding:0.2rem;'><code>" + no_mid.reduce((prev, cur) => prev + "\n" + escapehtml(cur)) + "</code></pre>";
+								}
+
+								$("#cant-load-alert-list").html(not_found_html);
+								alert_header.html("Can't load " + (not_found.length+no_mid.length)+ " cards! Click 'Load another deck' for more info.");
+							} else {
+								alert_div.addClass("d-none");
+								alert_header.addClass("d-none");
 							}
 
 							displayCards(cards);
@@ -1064,7 +1135,11 @@ $(document).ready(function() {
 						}
 					});
 
-					x.fail(function() {
+					x.fail(function(err) {
+						if (err.responseJSON && err.responseJSON.code == "not_found") {
+							// abort here because we'll warn about this anyway
+							return;
+						}
 						if (!warned_about_fail) {
 							warned_about_fail = true;
 							alert("Unable to contact scryfall's API. Maybe it's down? You could go check https://downforeveryoneorjustme.com/ to be sure.");

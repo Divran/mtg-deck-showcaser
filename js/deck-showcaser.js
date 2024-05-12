@@ -1053,14 +1053,17 @@ $(document).ready(function() {
 					var x = $.get( url, function(data) {
 						$.each(data.data,function(idx,card) {
 							//if (found_cards[card.name] == true) {return;}
-							var name = card.name.toLowerCase();
-							found_cards[name].status = true;
+							var amount = 0;
+							if (typeof card.name != "undefined" && card.name != null) {
+								var name = card.name.toLowerCase();
 
-							if (card.multiverse_ids.length == 0) {
-								no_mid.push(found_cards[name].line);
+								if (card.multiverse_ids.length == 0) {
+									no_mid.push(found_cards[name].line);
+								}
+
+								amount = amount_by_name[name] || 0;
 							}
 
-							var amount = amount_by_name[name] || 0;
 
 							// checks for other card faces
 							if (amount == 0) {
@@ -1068,13 +1071,19 @@ $(document).ready(function() {
 									for(var i=0;i<card.card_faces.length;i++) {
 										let face = card.card_faces[i];
 										let face_name = face.name.toLowerCase();
-										found_cards[face_name].status = true;
+										if (typeof found_cards[face_name] != "undefined") {
+											found_cards[face_name].status = true;
+										} else {
+											found_cards[face_name] = {status:true,line:face_name};
+										}
 
 										if (typeof amount_by_name[face_name] != "undefined") {
 											amount = amount_by_name[face_name];
 										}
 									}
 								}
+							} else if (amount > 0) {
+								found_cards[name].status = true;
 							}
 
 							processCard(card,cards,amount,in_sideboard);

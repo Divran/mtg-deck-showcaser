@@ -481,8 +481,12 @@ $(document).ready(function() {
 
 
 				if (type != false) {
+					if (type == "Basic Land") {
+						card.is_basic_land = true;
+					}
+
 					type = type.replace("Legendary ",""); // We don't care about legendary here
-					type = type.replace("Basic Land","Land"); // We don't care about basic  here
+					type = type.replace("Basic Land","Land"); // We don't care about basic here
 					
 					var expl = type.split(" ");
 					for(let i=0;i<expl.length;i++) {
@@ -519,6 +523,7 @@ $(document).ready(function() {
 			$.each(_cards,function(idx,card) {
 				// Typelist
 				parseSubtypes(card);
+				if (card.is_basic_land) {return;}
 
 				total_price.eur += roundPrice(getCardPrice(card.prices,"eur") * card.amount);
 				total_price.usd += roundPrice(getCardPrice(card.prices,"usd") * card.amount);
@@ -643,8 +648,8 @@ $(document).ready(function() {
 			}
 
 			return l < r ? 1 : -1;
-		})
-		col3.append("<center><strong>Deck Price List</strong></center>");
+		});
+		col3.append("<center><strong>Deck Price List</strong><div style='font-size:75%; margin-top:-20px;'><br/>(Basic lands not included)</div></center>");
 		var t = $("<table class='table table-striped'>");
 		t.append("<thead><tr><th style='width:99%'>Name</th><th>Euro</th><th>USD</th></tr></thead>");
 		var tb = $("<tbody>").appendTo(t);

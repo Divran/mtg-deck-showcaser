@@ -67,12 +67,12 @@ $(document).ready(function() {
 		var cards_list = [];
 		var sideboard_list = [];
 
-		// first extract amount, name, and set
+		// first extract amount, name, set, and collector number
 		$.each(cards,function(category,_cards) {
 			var list = cards_list;
 			if (category == "sideboard") {list = sideboard_list;}
 			$.each(_cards,function(index,card) {
-				list.push({amount:card.amount,name:card.name,'set':card.set});
+				list.push({amount:card.amount,name:card.name,'set':card.set,num:card.num});
 			});
 		});
 
@@ -90,14 +90,14 @@ $(document).ready(function() {
 		function appendCards(list) {
 			var ret = [];
 			$.each(list,function(idx,card) {
-				ret.push(card.amount + " " + card.name + " (" + card.set + ")");
+				ret.push(card.amount + " " + card.name + " (" + card.set.toUpperCase() + ") " + card.num);
 			});
 			return ret.join("\n");
 		}
 
-		var cards_str = appendCards(cards_list);
+		var cards_str = "Deck\n" + appendCards(cards_list);
 		if (sideboard_list.length > 0) {
-			cards_str += "\n\n" + appendCards(sideboard_list);
+			cards_str += "\n\nSideboard\n" + appendCards(sideboard_list);
 		}
 
 		input.val(cards_str);
@@ -934,7 +934,8 @@ $(document).ready(function() {
 			prices: card.prices,
 			mana_cost: mana_cost,
 			type_line: card.type_line,
-			faces: card.card_faces
+			faces: card.card_faces,
+			num: card.collector_number
 		});
 	}
 

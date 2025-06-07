@@ -215,19 +215,6 @@
 				var amount = $("#options-amount-stored",modal);
 				var del = $("#options-delete-stored",modal);
 
-				function updateCounter() {
-					amount.text(localStorage.length);
-				}
-
-				del.click(function(e) {
-					localStorage.clear();
-					updateCounter();
-					loadOptions();
-					e.preventDefault();
-					return true;
-				});
-
-
 				var options = {
 					"resolution": "1", // 0=low, 1=normal (default: 1)
 					"auto-split": "1", // 0=no, 1=yes (default: 1)
@@ -236,6 +223,26 @@
 					"hide-basic-grid": "1", // 1=hide basic lads, 0=don't hide basic lands (default: 1)
 					"merge-two-faced": "0" //0=separate two-faced cards, 1=merge two-faced cards (default:0)
 				};
+
+				function updateCounter() {
+					var n = 0;
+					for(var k in options) {
+						if (typeof localStorage[k] != "undefined") {
+							n++;
+						}
+					}
+					amount.text(n);
+				}
+
+				del.click(function(e) {
+					for(var k in options) {
+						delete localStorage[k];
+					}
+					updateCounter();
+					loadOptions();
+					e.preventDefault();
+					return true;
+				});
 
 				// options handled here instead of in showcaser code
 				var my_options = {
